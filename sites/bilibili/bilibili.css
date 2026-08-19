@@ -1,0 +1,619 @@
+/* PCWebToMobile · bilibili
+ * Applied under html.pcwtm (userscript) or @media (max-width: 920px) (Stylus).
+ * Layout only — keep Bilibili's own colors, type, and controls.
+ */
+
+html.pcwtm {
+  --pcwtm-bar: 52px;
+  --pcwtm-pink: #fb7299;
+  --pcwtm-text: #18191c;
+  --pcwtm-muted: #9499a0;
+  --pcwtm-bg: #f6f7f8;
+  --pcwtm-gap: 8px;
+}
+
+html.pcwtm,
+html.pcwtm body {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow-x: hidden !important;
+  background: var(--pcwtm-bg);
+}
+
+html.pcwtm body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Shells that hard-code 1080/1100 min-width */
+html.pcwtm #app,
+html.pcwtm .app-v1,
+html.pcwtm .bili-header,
+html.pcwtm .bili-header__bar,
+html.pcwtm .bili-header__banner,
+html.pcwtm .bili-header__channel,
+html.pcwtm .header-channel,
+html.pcwtm .header-channel-fixed,
+html.pcwtm .bili-feed4,
+html.pcwtm .bili-feed4-layout,
+html.pcwtm .feed2,
+html.pcwtm .recommended-container_floor-aside,
+html.pcwtm .container,
+html.pcwtm .video-container-v1,
+html.pcwtm .left-container,
+html.pcwtm .right-container,
+html.pcwtm .right-container-inner,
+html.pcwtm .main-container,
+html.pcwtm .plp-l,
+html.pcwtm .plp-r {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* ---------- Header ---------- */
+
+html.pcwtm .bili-header__bar,
+html.pcwtm .bili-header__bar.mini-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: var(--pcwtm-bar) !important;
+  min-height: var(--pcwtm-bar) !important;
+  padding: 0 6px 0 8px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  z-index: 10050 !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06) !important;
+  border-bottom: 0 !important;
+  transform: none !important;
+}
+
+html.pcwtm .bili-header.large-header {
+  min-height: 0 !important;
+}
+
+html.pcwtm .bili-header.fixed-header {
+  height: var(--pcwtm-bar) !important;
+  min-height: var(--pcwtm-bar) !important;
+}
+
+html.pcwtm .left-entry {
+  display: none !important;
+}
+
+html.pcwtm .right-entry {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  gap: 0 !important;
+  align-items: center !important;
+}
+
+html.pcwtm .right-entry > :not(.header-avatar-wrap) {
+  display: none !important;
+}
+
+html.pcwtm .header-avatar-wrap,
+html.pcwtm .header-avatar-wrap--container,
+html.pcwtm .header-entry-mini {
+  width: 36px !important;
+  height: 36px !important;
+  margin: 0 !important;
+}
+
+html.pcwtm .bili-header .header-entry-avatar,
+html.pcwtm .bili-header .bili-avatar {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+html.pcwtm .center-search-container,
+html.pcwtm .center-search-container.offset-center-search {
+  position: static !important;
+  flex: 1 1 auto !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  left: auto !important;
+}
+
+html.pcwtm .center-search__bar,
+html.pcwtm #nav-searchform {
+  width: 100% !important;
+  max-width: none !important;
+  height: 36px !important;
+}
+
+html.pcwtm .nav-search-input {
+  font-size: 16px !important; /* iOS no-zoom */
+  height: 36px !important;
+}
+
+html.pcwtm .search-panel {
+  width: min(100vw - 16px, 420px) !important;
+  left: 8px !important;
+  right: 8px !important;
+  max-height: 70vh !important;
+}
+
+html.pcwtm #pcwtm-menu-btn {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: 10px;
+  color: var(--pcwtm-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+html.pcwtm #pcwtm-menu-btn:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+html.pcwtm #pcwtm-mask {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10060;
+  background: rgba(0, 0, 0, 0.38);
+}
+
+html.pcwtm.pcwtm-open #pcwtm-mask {
+  display: block;
+}
+
+html.pcwtm #pcwtm-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(82vw, 320px);
+  z-index: 10070;
+  background: #fff;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
+  transform: translateX(105%);
+  transition: transform 0.22s ease;
+  overflow-y: auto;
+  padding: calc(12px + env(safe-area-inset-top)) 8px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.pcwtm.pcwtm-open #pcwtm-drawer {
+  transform: translateX(0);
+}
+
+html.pcwtm #pcwtm-drawer a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: var(--pcwtm-text);
+  text-decoration: none;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+html.pcwtm #pcwtm-drawer a:active {
+  background: #f1f2f3;
+}
+
+html.pcwtm #pcwtm-drawer .pcwtm-drawer-title {
+  padding: 8px 14px 14px;
+  font-size: 13px;
+  color: var(--pcwtm-muted);
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Homepage banner + channel ---------- */
+
+html.pcwtm .bili-header__banner {
+  height: 72px !important;
+  min-height: 72px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  margin-top: var(--pcwtm-bar) !important;
+  overflow: hidden !important;
+}
+
+html.pcwtm .bili-header__banner img,
+html.pcwtm .bili-header__banner .banner-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+html.pcwtm .header-banner__inner,
+html.pcwtm .animated-banner,
+html.pcwtm .taper-line {
+  display: none !important;
+}
+
+html.pcwtm .bili-header__channel {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 8px 0 10px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+html.pcwtm .bili-header__channel::-webkit-scrollbar {
+  display: none;
+}
+
+html.pcwtm .channel-icons {
+  flex: 0 0 auto !important;
+  margin: 0 4px 0 8px !important;
+}
+
+html.pcwtm .icon-title {
+  color: var(--pcwtm-text) !important;
+}
+
+html.pcwtm .right-channel-container,
+html.pcwtm .channel-items__left,
+html.pcwtm .channel-items__right {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
+  width: max-content !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  gap: 6px !important;
+}
+
+html.pcwtm .channel-link,
+html.pcwtm .channel-link__right,
+html.pcwtm .channel-entry-more__link {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 32px !important;
+  white-space: nowrap !important;
+  padding: 0 12px !important;
+  font-size: 13px !important;
+  color: var(--pcwtm-text) !important;
+  background: #f1f2f3 !important;
+  border-radius: 16px !important;
+}
+
+html.pcwtm .header-channel {
+  display: none !important;
+}
+
+/* ---------- Homepage feed ---------- */
+
+html.pcwtm .bili-feed4 {
+  margin-top: 0 !important;
+}
+
+html.pcwtm .bili-feed4-layout,
+html.pcwtm .feed2,
+html.pcwtm .recommended-container_floor-aside {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 0 72px !important;
+}
+
+html.pcwtm .container,
+html.pcwtm .container.is-version8 {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: none !important;
+  grid-auto-rows: auto !important;
+  gap: 12px 8px !important;
+  width: 100% !important;
+  padding: 0 var(--pcwtm-gap) !important;
+  margin: 0 !important;
+}
+
+html.pcwtm .recommended-swipe {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+html.pcwtm .recommended-swipe-core,
+html.pcwtm .recommended-swipe-shim {
+  width: 100% !important;
+  height: auto !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px 8px !important;
+}
+
+html.pcwtm .feed-card,
+html.pcwtm .bili-video-card,
+html.pcwtm .bili-video-card__wrap {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+html.pcwtm .bili-video-card__image,
+html.pcwtm .bili-video-card__image--wrap,
+html.pcwtm .bili-video-card__cover {
+  width: 100% !important;
+  border-radius: 8px !important;
+}
+
+html.pcwtm .bili-video-card__info {
+  padding: 6px 2px 0 !important;
+}
+
+html.pcwtm .bili-video-card__info--tit {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+html.pcwtm .bili-video-card__info--right {
+  padding-left: 0 !important;
+}
+
+html.pcwtm .bili-video-card__info--icon-text {
+  display: none !important;
+}
+
+html.pcwtm .feed-roll-btn {
+  display: none !important;
+}
+
+html.pcwtm .palette-button-wrap {
+  right: 12px !important;
+  left: auto !important;
+  bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+}
+
+html.pcwtm .download-client-trigger,
+html.pcwtm .vip-login-tip,
+html.pcwtm .bili-footer {
+  display: none !important;
+}
+
+/* ---------- Video page ---------- */
+
+html.pcwtm .video-container-v1 {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+html.pcwtm .left-container,
+html.pcwtm .left-container.scroll-sticky {
+  position: relative !important;
+  top: auto !important;
+  width: 100% !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+html.pcwtm .right-container,
+html.pcwtm .right-container-inner,
+html.pcwtm .right-container-inner.scroll-sticky {
+  position: relative !important;
+  top: auto !important;
+  width: 100% !important;
+  padding: 0 10px 24px !important;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
+}
+
+html.pcwtm #playerWrap,
+html.pcwtm .player-wrap {
+  order: -1;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: unset !important;
+  background: #000;
+}
+
+html.pcwtm #bilibili-player {
+  position: relative !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 16 / 9 !important;
+}
+
+html.pcwtm .bpx-docker,
+html.pcwtm .bpx-player-container,
+html.pcwtm .bpx-player-primary-area,
+html.pcwtm .bpx-player-video-area {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+}
+
+html.pcwtm .bpx-player-sending-bar {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 6px 8px !important;
+  overflow: hidden !important;
+}
+
+html.pcwtm .bpx-player-dm-root {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+html.pcwtm .bpx-player-sending-bar a[href*="help.html"] {
+  display: none !important;
+}
+
+html.pcwtm #viewbox_report,
+html.pcwtm .video-info-container {
+  width: 100% !important;
+  height: auto !important;
+  padding: 10px 12px 6px !important;
+}
+
+html.pcwtm .video-title {
+  width: 100% !important;
+  font-size: 16px !important;
+  line-height: 1.4 !important;
+  white-space: normal !important;
+  height: auto !important;
+}
+
+html.pcwtm .video-info-meta,
+html.pcwtm .video-info-detail-list {
+  flex-wrap: wrap !important;
+  row-gap: 4px !important;
+}
+
+html.pcwtm #arc_toolbar_report,
+html.pcwtm .video-toolbar-container {
+  width: 100% !important;
+  height: auto !important;
+  padding: 4px 4px 8px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 4px !important;
+  box-sizing: border-box !important;
+  overflow-x: auto !important;
+}
+
+html.pcwtm .video-toolbar-left,
+html.pcwtm .video-toolbar-right,
+html.pcwtm .video-toolbar-left-main {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  width: auto !important;
+  flex: 1 1 auto !important;
+  justify-content: space-around !important;
+}
+
+html.pcwtm .video-toolbar-right {
+  flex: 0 0 auto !important;
+}
+
+html.pcwtm .video-tag-container {
+  width: 100% !important;
+  padding: 0 12px 8px !important;
+  overflow-x: auto !important;
+  flex-wrap: nowrap !important;
+}
+
+html.pcwtm #commentapp,
+html.pcwtm #comment,
+html.pcwtm .reply-wrap {
+  width: 100% !important;
+  padding: 0 8px !important;
+}
+
+html.pcwtm .up-panel-container,
+html.pcwtm .up-info-container {
+  width: 100% !important;
+  padding: 10px 0 !important;
+}
+
+html.pcwtm #danmukuBox {
+  display: none !important;
+}
+
+html.pcwtm .recommend-list-v1,
+html.pcwtm .rec-list,
+html.pcwtm .rcmd-tab {
+  width: 100% !important;
+}
+
+html.pcwtm .video-page-card-small {
+  width: 100% !important;
+}
+
+html.pcwtm .video-page-card-small .card-box {
+  display: flex !important;
+  gap: 10px !important;
+}
+
+html.pcwtm .video-page-card-small .pic-box {
+  flex: 0 0 42% !important;
+  width: 42% !important;
+}
+
+html.pcwtm .ad-report,
+html.pcwtm .video-card-ad-small,
+html.pcwtm .slide-ad-exp,
+html.pcwtm .fixed-sidenav-storage,
+html.pcwtm .banner-card {
+  display: none !important;
+}
+
+/* Bangumi / old two-pane player */
+html.pcwtm .main-container {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+html.pcwtm .plp-l,
+html.pcwtm .plp-r {
+  width: 100% !important;
+  float: none !important;
+}
+
+/* Search */
+html.pcwtm .search-layout,
+html.pcwtm .search-content,
+html.pcwtm .search-page {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 8px !important;
+  margin: 0 !important;
+}
+
+/* Space */
+html.pcwtm .space-app,
+html.pcwtm #app > .wrapper {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+@media (max-width: 360px) {
+  html.pcwtm .container,
+  html.pcwtm .container.is-version8,
+  html.pcwtm .recommended-swipe-shim {
+    grid-template-columns: 1fr !important;
+  }
+}
