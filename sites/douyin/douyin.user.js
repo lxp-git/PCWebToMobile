@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PCWebToMobile · 抖音
 // @namespace    https://local1st.app/pcwebtomobile
-// @version      0.2.4
+// @version      0.2.5
 // @description  用 CSS 把 douyin.com PC 网页收成手机能用的布局，不抓内容，保留网页版功能
 // @author       PCWebToMobile
 // @match        *://www.douyin.com/*
@@ -24,6 +24,7 @@
   var WATCH_MS = 2000;
   var PCWTM_KEY = "pcwtm";
   var ON_VIDEO_KEY = "pcwtm-on-video";
+  var STAY_JX_KEY = "pcwtm-stay-jingxuan";
   var RECOMMEND_HREF = "https://www.douyin.com/?recommend=1&from_nav=1";
 
   // Official PC destinations we keep reachable if the live nav omitted them.
@@ -102,14 +103,23 @@
     return (path || location.pathname || "").indexOf("/video/") === 0;
   }
 
-  function isJingxuanDump() {
+  function isJingxuanDesktopLanding() {
+    if (isVideoPath()) return false;
+    try {
+      if (isRecommendUrl(new URL(location.href))) return false;
+    } catch (e) {}
     var path = location.pathname || "/";
     var search = location.search || "";
-    if (isVideoPath(path)) return false;
-    if (isRecommendUrl(new URL(location.href))) return false;
     if (path.indexOf("/jingxuan") === 0) return true;
     if (/(?:\?|&)modal_id=/.test(search)) return true;
     if ((path === "/" || path === "") && !/(?:\?|&)recommend=1/.test(search)) return true;
+    if (/精选电脑版/.test(document.title || "")) return true;
+    if (
+      document.querySelector(
+        ".jingxuan-scroll-element, .jingxuanFeedList, .discover-tab-bar, .discover-tab-container"
+      )
+    )
+      return true;
     return false;
   }
 
@@ -169,25 +179,32 @@
   }
 
   function rememberVideoPage() {
-    if (isVideoPath()) store(ON_VIDEO_KEY, "1");
+    if (isVideoPath()) {
+      store(STAY_JX_KEY, null);
+      store(ON_VIDEO_KEY, "1");
+    }
   }
 
   function clearVideoMark() {
     store(ON_VIDEO_KEY, null);
   }
 
+  function allowJingxuanNav() {
+    store(ON_VIDEO_KEY, null);
+    store(STAY_JX_KEY, "1");
+  }
+
   function recoverVideoBack() {
+    if (load(STAY_JX_KEY) === "1") return false;
     if (load(ON_VIDEO_KEY) !== "1") return false;
     if (isVideoPath()) return false;
-    if (!isJingxuanDump()) {
-      clearVideoMark();
-      return false;
-    }
-    if (!wantMobile()) {
-      clearVideoMark();
-      return false;
-    }
-    clearVideoMark();
+    try {
+      if (isRecommendUrl(new URL(location.href))) {
+        clearVideoMark();
+        return false;
+      }
+    } catch (e) {}
+    if (!isJingxuanDesktopLanding()) return false;
     goRecommend(true);
     return true;
   }
@@ -208,10 +225,16 @@
     var push = history.pushState;
     var replace = history.replaceState;
     history.pushState = function (state, title, url) {
-      return push.call(this, state, title, url == null ? url : decorateHref(url));
+      var ret = push.call(this, state, title, url == null ? url : decorateHref(url));
+      setTimeout(recoverVideoBack, 0);
+      setTimeout(recoverVideoBack, 300);
+      return ret;
     };
     history.replaceState = function (state, title, url) {
-      return replace.call(this, state, title, url == null ? url : decorateHref(url));
+      var ret = replace.call(this, state, title, url == null ? url : decorateHref(url));
+      setTimeout(recoverVideoBack, 0);
+      setTimeout(recoverVideoBack, 300);
+      return ret;
     };
   }
 
@@ -663,10 +686,11 @@
         if (isRecommendLabel(a.textContent) || destKey(a.href) === "recommend") {
           e.preventDefault();
           clearVideoMark();
+          store(STAY_JX_KEY, null);
           goRecommend();
           return;
         }
-        clearVideoMark();
+        allowJingxuanNav();
         closeDrawer();
       });
       document.body.appendChild(drawer);
@@ -788,8 +812,10 @@
   }
 
   function onPopState() {
-    if (recoverVideoBack()) return;
-    onNavigate();
+    setTimeout(function () {
+      if (!recoverVideoBack()) onNavigate();
+    }, 0);
+    setTimeout(recoverVideoBack, 300);
   }
 
   function onSameOriginClick(e) {
@@ -799,10 +825,9 @@
         var backLabel = (back.getAttribute("aria-label") || back.getAttribute("title") || "")
           .replace(/\s+/g, " ")
           .trim();
-        if (/^(返回|Back)$/i.test(backLabel)) {
+        if (/^(返回|Back|关闭)$/i.test(backLabel)) {
           e.preventDefault();
           e.stopPropagation();
-          clearVideoMark();
           goRecommend();
           return;
         }
@@ -820,19 +845,19 @@
       if (isRecommendLabel(labelOf(a)) || destKey(a.href) === "recommend") {
         e.preventDefault();
         clearVideoMark();
+        store(STAY_JX_KEY, null);
         goRecommend();
         return;
       }
       if (a.closest && a.closest("#pcwtm-drawer")) {
-        clearVideoMark();
+        allowJingxuanNav();
         onNavigate();
         return;
       }
       if (isVideoPath() && !isVideoPath(u.pathname)) {
         var p = u.pathname.replace(/\/+$/, "") || "/";
-        if (p === "/" || p === "/jingxuan") {
+        if (p === "/" || p.indexOf("/jingxuan") === 0) {
           e.preventDefault();
-          clearVideoMark();
           goRecommend();
           return;
         }
@@ -871,6 +896,7 @@
     }
   }
 
+  rememberVideoPage();
   patchHistory();
   rewriteLanding();
   apply();
