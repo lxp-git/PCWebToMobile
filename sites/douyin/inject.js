@@ -540,10 +540,18 @@
     return "";
   }
 
+  /* Live: many cards reuse id=sliderVideo. That id is the card, not a
+   * wrapper, unless it actually contains another aweme card. */
   function isSlideWrapper(el) {
-    if (!el || el.nodeType !== 1) return true;
-    if (el.id === "sliderVideo" || el.id === "slidelist") return true;
-    return (el.getAttribute("data-e2e") || "") === "slideList";
+    if (!el || el.nodeType !== 1) return false;
+    if (el.id === "slidelist") return true;
+    if ((el.getAttribute("data-e2e") || "") === "slideList") return true;
+    if (el.id === "sliderVideo") {
+      return !!el.querySelector(
+        "[data-e2e='feed-video'], [data-e2e='feed-active-video'], [data-e2e='video-detail']"
+      );
+    }
+    return false;
   }
 
   function isAwemeCard(el) {
@@ -589,13 +597,15 @@
       seen.push(el);
       out.push(el);
     }
-    var list = document.getElementById("slidelist") || document.querySelector("[data-e2e='slideList']");
+    var lists = document.querySelectorAll("#slidelist, [data-e2e='slideList']");
     var i;
-    if (list && list.children) {
-      for (i = 0; i < list.children.length; i++) add(list.children[i]);
+    var L;
+    for (L = 0; L < lists.length; L++) {
+      if (!lists[L].children) continue;
+      for (i = 0; i < lists[L].children.length; i++) add(lists[L].children[i]);
     }
     var feeds = document.querySelectorAll(
-      "[data-e2e='feed-video'], [data-e2e='feed-active-video'], [data-e2e='video-detail']"
+      "[id='sliderVideo'], [data-e2e='feed-video'], [data-e2e='feed-active-video'], [data-e2e='video-detail']"
     );
     for (i = 0; i < feeds.length; i++) add(feeds[i]);
     return out;
@@ -678,11 +688,8 @@
     if (best) return best;
     var pointed = asCard(cardFromPoint());
     if (pointed) return pointed;
-    var slider = document.getElementById("sliderVideo");
-    if (slider) {
-      best = asCard(slider);
-      if (best) return best;
-    }
+    best = asCard(pickActiveCard(document.querySelectorAll("[id='sliderVideo']")));
+    if (best) return best;
     return document.querySelector("[data-e2e='video-detail']") || document.body;
   }
 
@@ -1323,7 +1330,12 @@
     };
     watchRoot(document.getElementById("slidelist"), slideSubtree);
     watchRoot(document.querySelector("[data-e2e='slideList']"), slideSubtree);
-    watchRoot(document.getElementById("sliderVideo"), slideSubtree);
+    var sliders = document.querySelectorAll(
+      "[id='sliderVideo'], [data-e2e='feed-active-video'], [data-e2e='feed-video']"
+    );
+    for (i = 0; i < sliders.length && i < 8; i++) {
+      watchRoot(sliders[i], slideSubtree);
+    }
     watchRoot(document.getElementById("douyin-header"), { childList: true });
     watchRoot(document.getElementById("douyin-right-container"), { childList: true });
     var sides = commentSidePanels();
