@@ -11,7 +11,7 @@ HEADER = """\
 // ==UserScript==
 // @name         PCWebToMobile · 抖音
 // @namespace    https://local1st.app/pcwebtomobile
-// @version      0.1.0
+// @version      0.2.0
 // @description  用 CSS 把 douyin.com PC 网页收成手机能用的布局，不抓内容，保留网页版功能
 // @author       PCWebToMobile
 // @match        *://www.douyin.com/*

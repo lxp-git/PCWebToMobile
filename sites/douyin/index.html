@@ -2,26 +2,78 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>抖音 · 下载脚本</title>
   <style>
-    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 24px; max-width: 40rem; line-height: 1.5; }
-    h1 { font-size: 1.4rem; }
-    .dl { display: block; text-align: center; background: #111; color: #fff; text-decoration: none; padding: 14px 20px; border-radius: 10px; font-weight: 600; margin: 20px 0; }
-    ol { padding-left: 1.2rem; }
-    code { font-size: 0.9em; }
+    :root {
+      --pcwtm-bg: #000;
+      --pcwtm-elevated: #161616;
+      --pcwtm-fg: #ececec;
+      --pcwtm-muted: #8a8a8a;
+      --pcwtm-accent: #fe2c55;
+      --pcwtm-border: rgba(236, 236, 236, 0.12);
+      --pcwtm-space: 8px;
+      --pcwtm-radius: 8px;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: calc(24px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+      max-width: 40rem;
+      font-family: -apple-system, system-ui, sans-serif;
+      line-height: 1.5;
+      background: var(--pcwtm-bg);
+      color: var(--pcwtm-fg);
+    }
+    h1 {
+      margin: 0 0 16px;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    p { margin: 0 0 16px; color: var(--pcwtm-fg); }
+    .muted { color: var(--pcwtm-muted); }
+    .dl {
+      display: block;
+      text-align: center;
+      background: var(--pcwtm-elevated);
+      color: var(--pcwtm-fg);
+      text-decoration: none;
+      padding: 16px;
+      border: 1px solid var(--pcwtm-accent);
+      border-radius: 16px;
+      font-weight: 600;
+      margin: 16px 0 24px;
+      touch-action: manipulation;
+    }
+    .dl:active { transform: scale(0.98); }
+    ol { margin: 0 0 24px; padding-left: 1.2rem; color: var(--pcwtm-fg); }
+    li { margin-bottom: var(--pcwtm-space); }
+    code {
+      font-size: 0.9em;
+      padding: 1px 6px;
+      border-radius: var(--pcwtm-radius);
+      background: var(--pcwtm-elevated);
+      border: 1px solid var(--pcwtm-border);
+    }
+    footer a { color: var(--pcwtm-muted); }
+    @media (prefers-reduced-motion: reduce) {
+      .dl:active { transform: none; }
+    }
   </style>
 </head>
 <body>
   <h1>抖音 · 手机 UI</h1>
   <p>PC 站的功能，手机的布局。CSS 改样式，不抓内容。</p>
-  <p><strong>v0.1.0</strong>：推荐页上下滑 + 视频详情/评论。未登录可用。其它页（搜索、直播、主页、电商、消息）脚本会挂上，但只有全局去 min-width。</p>
+  <p class="muted"><strong>v0.2.0</strong>：推荐流铺满、菜单收成安静抽屉；脚本不再对整页 DOM 做 subtree 监听。未登录可用。搜索 / 直播 / 主页 / 电商 / 消息仍走官网自己的页，只有去 min-width。</p>
   <a class="dl" href="douyin.user.js" download="douyin.user.js">下载脚本</a>
   <ol>
-    <li>点上面按钮，把脚本全文复制到 iOS <strong>Alook</strong> → 脚本，启用。</li>
+    <li>点上面按钮，把脚本全文复制到 iOS <strong>Alook</strong> → 脚本，启用。已装过 v0.1.0 的请删掉旧脚本再贴一次。</li>
     <li>用 Alook 打开 <code>www.douyin.com</code> 的<strong>桌面版</strong>（不要进 <code>m.douyin.com</code>）。</li>
     <li>未登录时官网常先落到精选网格；要上下滑请点菜单里的「推荐」，或打开 <code>www.douyin.com/?recommend=1</code>。</li>
   </ol>
-  <p><a href="../../">回目录</a> · <a href="https://github.com/lxp-git/PCWebToMobile/issues/new?template=wish.yml">许愿别的站</a></p>
+  <footer>
+    <a href="../../">回目录</a> · <a href="https://github.com/lxp-git/PCWebToMobile/issues/new?template=wish.yml">许愿别的站</a>
+  </footer>
 </body>
 </html>
