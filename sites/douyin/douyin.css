@@ -28,11 +28,12 @@
  * official close — do not use it as the open signal.
  * JS may mark the official close node with .pcwtm-host-close (host node only).
  * Recommend door is /?recommend=1&from_nav=1 (bare ?recommend=1 bounces to jingxuan).
- * Login wall (live 390, 2026-08-20): article#douyin_login_comp_flat_panel
- * already stacks, but #douyin_login_landing_flat_container stays flex-row.
- * Hide #douyin_login_comp_scan_code / #animate_qrcode_container; phone is
- * #douyin_login_comp_mobile_code (single_panel is often absent). Official X
- * is the host glyph — do not invent a close.
+ * Login wall (live 390/720/1280, 2026-08-20): do not only target the article.
+ * Hosts that can be the two-column card: #login-panel-new, #douyin-login-new-id,
+ * #douyin_login_comp_flat_panel, #douyin_login_comp_single_panel,
+ * #douyin_login_landing_flat_container. Like/header this run had no
+ * single_panel (phone is #douyin_login_comp_mobile_code) but other variants
+ * use it and may omit the article. Hide QR. Official X only — no homemade close.
  */
 
 html.pcwtm {
@@ -888,31 +889,48 @@ html.pcwtm .pcwtm-sheet-panel [class*="EveryoneSearch"] {
   content-visibility: hidden;
 }
 
-/* Outer shells already fit ~500. Do not keep unlocking #login-panel-new.
- * Clip leftover overflow until the inner article shrinks. */
+/* Live 390: article column still sits in a 253px #login-panel-new /
+ * #douyin-login-new-id row (official phone-column width). Some variants
+ * use #douyin_login_comp_single_panel and omit the article. Stack all
+ * stable hosts; hide QR; stretch the phone column. No hashed classes. */
 html.pcwtm #login-panel-new,
-html.pcwtm #douyin-login-new-id {
-  overflow-x: hidden;
-  z-index: 10120;
-  pointer-events: auto;
-}
-
-/* Inner desktop two-column (QA: 726) is the overflow. Stack / drop QR. */
-html.pcwtm article#douyin_login_comp_flat_panel,
-html.pcwtm article#douyin_login_comp_flat_panel > *,
-html.pcwtm article#douyin_login_comp_flat_panel > * > * {
-  min-width: 0 !important;
-  max-width: 100% !important;
+html.pcwtm #douyin-login-new-id,
+html.pcwtm #douyin_login_comp_flat_panel,
+html.pcwtm #douyin_login_comp_single_panel,
+html.pcwtm #douyin_login_landing_flat_container {
   box-sizing: border-box !important;
-}
-
-html.pcwtm article#douyin_login_comp_flat_panel {
-  width: 100% !important;
+  width: 100vw !important;
   max-width: 100vw !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
   display: flex !important;
   flex-direction: column !important;
   flex-wrap: nowrap !important;
   overflow-x: hidden !important;
+}
+
+html.pcwtm #login-panel-new,
+html.pcwtm #douyin-login-new-id {
+  z-index: 10120;
+  pointer-events: auto;
+}
+
+html.pcwtm #login-panel-new > *,
+html.pcwtm #douyin-login-new-id > *,
+html.pcwtm #douyin_login_comp_flat_panel > *,
+html.pcwtm #douyin_login_comp_flat_panel > * > *,
+html.pcwtm #douyin_login_comp_single_panel > *,
+html.pcwtm #douyin_login_landing_flat_container > * {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  flex: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 html.pcwtm #douyin_login_comp_scan_code,
@@ -921,30 +939,24 @@ html.pcwtm #default_scan_code_guide {
   display: none !important;
 }
 
-/* Live leftover two-column: this row stays flex-direction:row after the
- * article is column. Hide the QR remnant; phone column is 100%. */
-html.pcwtm #douyin_login_landing_flat_container {
-  display: flex !important;
-  flex-direction: column !important;
-  flex-wrap: nowrap !important;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-html.pcwtm #douyin_login_landing_flat_container > * {
-  width: 100% !important;
-  max-width: 100% !important;
-  flex: none !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-html.pcwtm #douyin_login_landing_flat_container > *:has(#douyin_login_comp_scan_code),
-html.pcwtm #douyin_login_landing_flat_container > *:has(#animate_qrcode_container),
+/* Hide a QR-only sibling. Do not hide a wrapper that also holds the phone. */
+html.pcwtm #login-panel-new > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
+html.pcwtm #douyin-login-new-id > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
+html.pcwtm #douyin_login_comp_flat_panel > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
+html.pcwtm #douyin_login_comp_single_panel > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)),
+html.pcwtm #douyin_login_landing_flat_container > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
+html.pcwtm #login-panel-new > *:has(#animate_qrcode_container):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
+html.pcwtm #douyin-login-new-id > *:has(#animate_qrcode_container):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
+html.pcwtm #douyin_login_landing_flat_container > *:has(#animate_qrcode_container):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
 html.pcwtm #douyin_login_landing_flat_container > *:not(#douyin_login_comp_mobile_code):not(#douyin_login_comp_single_panel):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)) {
   display: none !important;
 }
+
 html.pcwtm #douyin_login_comp_mobile_code,
-html.pcwtm article#douyin_login_comp_flat_panel #douyin_login_comp_single_panel,
-html.pcwtm #douyin_login_comp_single_panel {
+html.pcwtm #douyin_login_comp_single_panel,
+html.pcwtm #douyin_login_comp_normal_input_id,
+html.pcwtm #douyin_login_comp_button_input_id,
+html.pcwtm #douyin_login_comp_btn_id {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
