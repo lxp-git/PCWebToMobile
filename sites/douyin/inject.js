@@ -1,9 +1,9 @@
 (function () {
   "use strict";
 
-  // After first paint we do not observe document with subtree:true.
-  // Watch #slidelist / #douyin-header (childList only), plus popstate,
-  // same-origin clicks, and a 2s interval. Coalesce with one rAF.
+  // After first paint we do not observe documentElement with subtree:true.
+  // Watch the smallest live roots (slidelist / sliderVideo / video-detail,
+  // plus style/class on comment side panels). Coalesce with one rAF.
   // collectLinks runs only when the drawer opens (textContent, never innerText).
 
   var STYLE_ID = "pcwtm-douyin-css";
@@ -39,6 +39,9 @@
   var detailTrapLive = false;
   var detailTrapFor = "";
   var detailTrapPushes = 0;
+  var lastAwemeKey = "";
+  var suppressSheetUntil = 0;
+  var closingSheet = false;
 
   function store(key, value) {
     try {
@@ -156,6 +159,16 @@
     return isDumpDest(href);
   }
 
+  function isOfficialSwitch(el) {
+    return !!(
+      el &&
+      el.closest &&
+      el.closest(
+        "[data-e2e='video-switch-next-arrow'], [data-e2e='video-switch-prev-arrow'], .xgplayer-playswitch"
+      )
+    );
+  }
+
   function retargetOfficialVideoBack() {
     if (!isVideoPath() || !wantMobile()) return;
     var nodes = document.querySelectorAll("a[href], [data-e2e='video-detail'] a");
@@ -164,6 +177,7 @@
       var a = nodes[i];
       if (!a.href || !isDumpDest(a.href)) continue;
       if (a.closest && a.closest("#pcwtm-drawer")) continue;
+      if (isOfficialSwitch(a)) continue;
       var lab = labelOf(a);
       if (/^(精选|推荐|For You|Topick)$/i.test(lab)) continue;
       if (a.getAttribute("data-pcwtm-videoback") === "1") continue;
@@ -386,6 +400,7 @@
       setTimeout(recoverVideoBack, 0);
       setTimeout(recoverVideoBack, 300);
       if (isVideoPath()) setTimeout(armDetailBackTrap, 0);
+      onNavigate();
       return ret;
     };
     history.replaceState = function (state, title, url) {
@@ -397,6 +412,7 @@
         detailTrapLive = false;
         setTimeout(armDetailBackTrap, 0);
       }
+      onNavigate();
       return ret;
     };
     try {
@@ -465,6 +481,7 @@
     root.classList.toggle("pcwtm-video", video);
     root.classList.toggle("pcwtm-modal", modal);
     if (video || isDetailPage()) rememberVideoPage();
+    markActiveAweme();
   }
 
   function syncMode() {
@@ -482,22 +499,305 @@
 
   var HOST_CLOSE_CLASS = "pcwtm-host-close";
 
+  function visibleArea(el) {
+    if (!el || !el.getBoundingClientRect) return 0;
+    var r = el.getBoundingClientRect();
+    var vh = window.innerHeight || 0;
+    var vw = window.innerWidth || 0;
+    var h = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+    var w = Math.min(r.right, vw) - Math.max(r.left, 0);
+    if (h <= 0 || w <= 0) return 0;
+    return h * w;
+  }
+
+  function pickMostVisible(nodes) {
+    var best = null;
+    var bestA = 0;
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var area = visibleArea(nodes[i]);
+      if (area > bestA) {
+        bestA = area;
+        best = nodes[i];
+      }
+    }
+    return bestA > 6400 ? best : null;
+  }
+
+  function videoDigits(el) {
+    if (!el) return "";
+    var cm = String(el.className || "").match(/video_(\d+)/);
+    return cm ? cm[1] : "";
+  }
+
+  function pathAwemeId() {
+    var path = location.pathname || "";
+    var m = path.match(/\/video\/(\d+)/);
+    if (m) return m[1];
+    try {
+      var mid = new URLSearchParams(location.search).get("modal_id");
+      if (mid && /^\d+$/.test(mid)) return mid;
+    } catch (e) {}
+    return "";
+  }
+
+  /* Live: many cards reuse id=sliderVideo. That id is the card, not a
+   * wrapper, unless it actually contains another aweme card. */
+  function isSlideWrapper(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (el.id === "slidelist") return true;
+    if ((el.getAttribute("data-e2e") || "") === "slideList") return true;
+    if (el.id === "sliderVideo") {
+      return !!el.querySelector(
+        "[data-e2e='feed-video'], [data-e2e='feed-active-video'], [data-e2e='video-detail']"
+      );
+    }
+    return false;
+  }
+
+  function isAwemeCard(el) {
+    if (!el || isSlideWrapper(el)) return false;
+    var e2e = el.getAttribute("data-e2e") || "";
+    return e2e === "feed-active-video" || e2e === "feed-video" || e2e === "video-detail";
+  }
+
+  function playingBonus(el) {
+    if (!el || !el.querySelector) return 0;
+    var v = el.querySelector("video");
+    return v && !v.paused && v.readyState >= 2 ? 1000000 : 0;
+  }
+
+  function idFromScope(scope) {
+    var id = videoDigits(scope);
+    if (id) return id;
+    if (!scope || !scope.querySelectorAll) return "";
+    var nodes = scope.querySelectorAll("[class*='video_']");
+    var i;
+    var best = "";
+    var bestScore = -1;
+    for (i = 0; i < nodes.length; i++) {
+      var nid = videoDigits(nodes[i]);
+      if (!nid) continue;
+      var score = visibleArea(nodes[i]) + playingBonus(nodes[i]);
+      if (score > bestScore) {
+        bestScore = score;
+        best = nid;
+      }
+    }
+    return best;
+  }
+
+  /* After /video/:id slide, #sliderVideo / first video-detail keep the old
+   * attrs. Use the in-view slidelist child (the new card), not the wrapper. */
+  function slideCards() {
+    var out = [];
+    var seen = [];
+    function add(el) {
+      if (!el || isSlideWrapper(el)) return;
+      if (seen.indexOf(el) !== -1) return;
+      seen.push(el);
+      out.push(el);
+    }
+    var lists = document.querySelectorAll("#slidelist, [data-e2e='slideList']");
+    var i;
+    var L;
+    for (L = 0; L < lists.length; L++) {
+      if (!lists[L].children) continue;
+      for (i = 0; i < lists[L].children.length; i++) add(lists[L].children[i]);
+    }
+    var feeds = document.querySelectorAll(
+      "[id='sliderVideo'], [data-e2e='feed-video'], [data-e2e='feed-active-video'], [data-e2e='video-detail']"
+    );
+    for (i = 0; i < feeds.length; i++) add(feeds[i]);
+    return out;
+  }
+
+  /* Official feed-active-video / video_* often stay on the first card.
+   * Score the painted item: viewport, playing video, path id, center hit. */
+  function cardFromPoint() {
+    var x = Math.floor((window.innerWidth || 0) / 2);
+    var y = Math.floor((window.innerHeight || 0) * 0.42);
+    var hit = document.elementFromPoint(x, y);
+    if (!hit || !hit.closest) return null;
+    if (hit.closest("#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #pcwtm-drawer, #pcwtm-menu-btn"))
+      return null;
+    var card = hit.closest(
+      "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail']"
+    );
+    return card && !isSlideWrapper(card) ? card : null;
+  }
+
+  function pickActiveCard(nodes) {
+    var pathId = pathAwemeId();
+    var pointed = cardFromPoint();
+    var best = null;
+    var bestScore = 0;
+    var i;
+    var vh = window.innerHeight || 0;
+    var mid = vh / 2;
+    for (i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (!el || isSlideWrapper(el)) continue;
+      var area = visibleArea(el);
+      if (area <= 0) continue;
+      var score = area;
+      var id = idFromScope(el);
+      if (id && pathId && id === pathId) score += 2000000;
+      score += playingBonus(el);
+      if (
+        pointed &&
+        (el === pointed || (el.contains && el.contains(pointed)) || (pointed.contains && pointed.contains(el)))
+      ) {
+        score += 3000000;
+      }
+      try {
+        var op = parseFloat(window.getComputedStyle(el).opacity);
+        if (!isNaN(op)) score += op * 8000;
+      } catch (e1) {}
+      var r = el.getBoundingClientRect();
+      score -= Math.min(Math.abs((r.top + r.bottom) / 2 - mid), vh);
+      if (score > bestScore) {
+        bestScore = score;
+        best = el;
+      }
+    }
+    return bestScore > 6400 || (best && playingBonus(best)) ? best : null;
+  }
+
+  function asCard(el) {
+    if (!el || el === document.body) return el;
+    if (isAwemeCard(el)) return el;
+    if (el.closest) {
+      var host = el.closest(
+        "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail']"
+      );
+      if (host && !isSlideWrapper(host) && visibleArea(host) > 0) return host;
+    }
+    if (el.querySelectorAll) {
+      var inner = pickActiveCard(
+        el.querySelectorAll("[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail']")
+      );
+      if (inner) return inner;
+    }
+    return isSlideWrapper(el) ? null : el;
+  }
+
+  function activeVideoRoot() {
+    var best = asCard(pickActiveCard(slideCards()));
+    if (best) return best;
+    best = asCard(pickActiveCard(document.querySelectorAll("[data-e2e='video-detail']")));
+    if (best) return best;
+    var pointed = asCard(cardFromPoint());
+    if (pointed) return pointed;
+    best = asCard(pickActiveCard(document.querySelectorAll("[id='sliderVideo']")));
+    if (best) return best;
+    return document.querySelector("[data-e2e='video-detail']") || document.body;
+  }
+
+  function currentAwemeId() {
+    return idFromScope(activeVideoRoot()) || pathAwemeId();
+  }
+
+  function awemeKey() {
+    var scope = activeVideoRoot();
+    var tag = "";
+    if (scope && scope.getAttribute) tag = scope.getAttribute("data-e2e") || scope.id || "";
+    return currentAwemeId() + "@" + tag;
+  }
+
+  function markActiveAweme() {
+    var scope = activeVideoRoot();
+    var prev = document.querySelectorAll(".pcwtm-active-aweme");
+    var i;
+    var swapped = false;
+    for (i = 0; i < prev.length; i++) {
+      if (prev[i] !== scope) prev[i].classList.remove("pcwtm-active-aweme");
+    }
+    if (scope && scope.classList && scope !== document.body) {
+      scope.classList.add("pcwtm-active-aweme");
+    }
+    var key = awemeKey();
+    if (key !== lastAwemeKey) {
+      lastAwemeKey = key;
+      swapped = true;
+      suppressSheetUntil = Date.now() + 700;
+      document.documentElement.classList.remove("pcwtm-comments");
+      var leftover = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
+      for (i = 0; i < leftover.length; i++) {
+        leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+        if (leftover[i].style) leftover[i].style.transform = "";
+      }
+      dismissOfficialPanels();
+      suppressSheetUntil = Date.now() + 700;
+    }
+    return swapped;
+  }
+
+  function dismissOfficialPanels() {
+    closingSheet = true;
+    try {
+      var panels = commentSidePanels();
+      var i;
+      for (i = 0; i < panels.length; i++) {
+        var panel = panels[i];
+        if ((panel.offsetWidth || 0) <= 48) continue;
+        var closer = findOfficialClose(panel);
+        if (closer) closer.click();
+        if ((panel.offsetWidth || 0) <= 48) continue;
+        var owner = panelOwner(panel) || panel;
+        var icon =
+          (owner.querySelector && owner.querySelector("[data-e2e='feed-comment-icon']")) ||
+          document.querySelector("[data-e2e='feed-comment-icon']");
+        if (icon) icon.click();
+      }
+    } finally {
+      closingSheet = false;
+    }
+  }
+
+  function commentSidePanels() {
+    return document.querySelectorAll("#videoSideCard, #videoSideBar");
+  }
+
+  function panelOwner(el) {
+    if (!el || !el.closest) return null;
+    return el.closest(
+      "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail'], #sliderVideo"
+    );
+  }
+
   /* Live: official close sets #videoSideCard/#videoSideBar width to 0 but
    * leaves #relatedVideoCard and [data-e2e=comment-list] in the DOM.
-   * Peek without our sheet class so offsetWidth is the host's, not ours. */
+   * Peek without our sheet class so offsetWidth is the host's, not ours.
+   * After /video/:id SPA swap, getElementById still hits the first card —
+   * walk every id twin and keep the one for the in-view aweme. */
   function officialCommentPanel() {
     var root = document.documentElement;
     var held = root.classList.contains("pcwtm-comments");
     if (held) root.classList.remove("pcwtm-comments");
-    var card = document.getElementById("videoSideCard");
-    var bar = document.getElementById("videoSideBar");
-    var cw = card ? card.offsetWidth : 0;
-    var bw = bar ? bar.offsetWidth : 0;
-    var panel = null;
-    if (cw >= bw && cw > 48) panel = card;
-    else if (bw > 48) panel = bar;
+    if (Date.now() < suppressSheetUntil) {
+      if (held) root.classList.add("pcwtm-comments");
+      return null;
+    }
+    var scope = activeVideoRoot();
+    var panels = commentSidePanels();
+    var best = null;
+    var bestW = 0;
+    var i;
+    for (i = 0; i < panels.length; i++) {
+      var el = panels[i];
+      if (!el || !el.isConnected) continue;
+      var w = el.offsetWidth || 0;
+      if (w <= 48) continue;
+      var owner = panelOwner(el);
+      if (owner && scope && owner !== scope && visibleArea(owner) < 6400) continue;
+      if (w > bestW) {
+        bestW = w;
+        best = el;
+      }
+    }
     if (held) root.classList.add("pcwtm-comments");
-    return panel;
+    return best;
   }
 
   function findOfficialClose(panel) {
@@ -529,12 +829,38 @@
     return best;
   }
 
+  function findActiveCommentIcon() {
+    var scope = activeVideoRoot();
+    var icons = document.querySelectorAll("[data-e2e='feed-comment-icon']");
+    var best = null;
+    var bestA = 0;
+    var scoped = null;
+    var scopedA = -1;
+    var i;
+    for (i = 0; i < icons.length; i++) {
+      var icon = icons[i];
+      var area = visibleArea(icon);
+      if (area > bestA) {
+        bestA = area;
+        best = icon;
+      }
+      if (scope && scope.contains && scope.contains(icon) && area >= scopedA) {
+        scopedA = area;
+        scoped = icon;
+      }
+    }
+    /* After slide the first icon can still be the largest leftover.
+     * Prefer the icon on the in-view card even if immersive hide made it 0×0. */
+    return scoped || best || null;
+  }
+
   function findRailCommentChip() {
-    var icon = document.querySelector("[data-e2e='feed-comment-icon']");
+    var icon = findActiveCommentIcon();
     if (!icon) return null;
-    var scope = icon.parentElement && icon.parentElement.parentElement;
-    if (!scope) scope = document.body;
-    var nodes = scope.querySelectorAll("button, [role='button'], div, span");
+    var rail = icon.parentElement && icon.parentElement.parentElement;
+    if (!rail) rail = icon.closest && icon.closest(".positionBox");
+    if (!rail) rail = document.body;
+    var nodes = rail.querySelectorAll("button, [role='button'], div, span");
     var i;
     for (i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -568,14 +894,17 @@
       function (e) {
         var t = e.target;
         if (!t || !t.closest) return;
+        if (isLoginWallNode(t)) return;
         if (
           !t.closest(
-            "#videoSideCard, #videoSideBar, [data-e2e='feed-comment-icon'], #sliderVideo, .xgplayer, .positionBox"
+            "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='feed-comment-icon'], [data-e2e='comment-list'], [data-e2e='video-detail'], [data-e2e='feed-video'], [data-e2e='feed-active-video'], .pcwtm-active-aweme, #sliderVideo, .xgplayer, .positionBox"
           )
         )
           return;
+        if (!closingSheet && t.closest("[data-e2e='feed-comment-icon']")) suppressSheetUntil = 0;
         setTimeout(syncCommentSheet, 50);
         setTimeout(syncCommentSheet, 250);
+        setTimeout(syncCommentSheet, 600);
       },
       true
     );
@@ -632,21 +961,36 @@
     }
   }
 
+  function placeSheet(panel) {
+    if (!panel || !panel.style) return;
+    panel.style.transform = "";
+    var r = panel.getBoundingClientRect();
+    var vh = window.innerHeight || 0;
+    var dy = vh - r.height - r.top;
+    if (r.height > 40 && Math.abs(dy) > 16) {
+      panel.style.transform = "translateY(" + dy + "px)";
+    }
+  }
+
+  function clearSheetInline(el) {
+    if (el && el.style) el.style.transform = "";
+  }
+
   function syncCommentSheet() {
+    markActiveAweme();
     var panel = officialCommentPanel();
     document.documentElement.classList.toggle("pcwtm-comments", !!panel);
-    if (!panel) {
-      var leftover = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
-      var i;
-      for (i = 0; i < leftover.length; i++) {
-        leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+    var marked = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
+    var i;
+    for (i = 0; i < marked.length; i++) {
+      if (marked[i] !== panel) {
+        marked[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+        clearSheetInline(marked[i]);
       }
-      return;
     }
-    ["videoSideCard", "videoSideBar"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.classList.toggle("pcwtm-sheet-panel", el === panel);
-    });
+    if (!panel) return;
+    panel.classList.add("pcwtm-sheet-panel");
+    placeSheet(panel);
     markOfficialClose(panel);
     markSheetTabs(panel);
     hideSheetPromos(panel);
@@ -922,11 +1266,23 @@
           dy < 0
             ? '[data-e2e="video-switch-next-arrow"]'
             : '[data-e2e="video-switch-prev-arrow"]';
-        var arrow = document.querySelector(sel);
+        var arrow = officialSwitchArrow(sel);
         if (arrow) arrow.click();
       },
       { passive: true }
     );
+  }
+
+  function officialSwitchArrow(sel) {
+    var scope = activeVideoRoot();
+    var arrow = scope && scope.querySelector ? scope.querySelector(sel) : null;
+    if (arrow && visibleArea(arrow) > 0) return arrow;
+    var all = document.querySelectorAll(sel);
+    var i;
+    for (i = 0; i < all.length; i++) {
+      if (visibleArea(all[i]) > 0) return all[i];
+    }
+    return all[0] || null;
   }
 
   function sameTab() {
@@ -958,6 +1314,11 @@
     if (on) {
       ensureChrome();
       startWatch();
+      if (markActiveAweme()) {
+        setTimeout(syncCommentSheet, 50);
+        setTimeout(syncCommentSheet, 250);
+        setTimeout(syncCommentSheet, 600);
+      }
       syncCommentSheet();
       rememberVideoPage();
       retargetOfficialVideoBack();
@@ -965,6 +1326,14 @@
     } else {
       stopWatch();
     }
+  }
+
+  function watchRoot(el, opts) {
+    if (!el || observedRoots.indexOf(el) !== -1) return;
+    var obs = new MutationObserver(schedule);
+    obs.observe(el, opts || { childList: true });
+    rootObservers.push(obs);
+    observedRoots.push(el);
   }
 
   function connectSmallRoots() {
@@ -981,19 +1350,79 @@
     }
     observedRoots = live;
     rootObservers = nextObs;
-    ["slidelist", "douyin-header", "videoSideCard", "videoSideBar"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el || observedRoots.indexOf(el) !== -1) return;
-      var obs = new MutationObserver(schedule);
-      var opts = { childList: true };
-      if (id === "videoSideCard" || id === "videoSideBar") {
-        opts.attributes = true;
-        opts.attributeFilter = ["style", "class"];
-      }
-      obs.observe(el, opts);
-      rootObservers.push(obs);
-      observedRoots.push(el);
-    });
+    /* Small-root subtree only — never documentElement. Slide updates class /
+     * data-e2e / video_* on nested cards, which childList-only misses. */
+    var slideSubtree = {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "data-e2e"],
+    };
+    watchRoot(document.getElementById("slidelist"), slideSubtree);
+    watchRoot(document.querySelector("[data-e2e='slideList']"), slideSubtree);
+    var sliders = document.querySelectorAll(
+      "[id='sliderVideo'], [data-e2e='feed-active-video'], [data-e2e='feed-video']"
+    );
+    for (i = 0; i < sliders.length && i < 8; i++) {
+      watchRoot(sliders[i], slideSubtree);
+    }
+    watchRoot(document.getElementById("douyin-header"), { childList: true });
+    watchRoot(document.getElementById("douyin-right-container"), { childList: true });
+    var sides = commentSidePanels();
+    for (i = 0; i < sides.length; i++) {
+      watchRoot(sides[i], {
+        childList: true,
+        attributes: true,
+        attributeFilter: ["style", "class"],
+      });
+    }
+    var locals = document.querySelectorAll(
+      "[data-e2e='video-detail'], .leftContainer, .route-scroll-container, .parent-route-container"
+    );
+    for (i = 0; i < locals.length && i < 8; i++) {
+      var loc = locals[i];
+      watchRoot(
+        loc,
+        (loc.getAttribute("data-e2e") || "") === "video-detail"
+          ? slideSubtree
+          : { childList: true }
+      );
+    }
+    bindDetailScroll();
+    bindSlideSettle();
+    bindMediaSettle();
+  }
+
+  function bindDetailScroll() {
+    var roots = document.querySelectorAll(
+      ".route-scroll-container, .parent-route-container, #slidelist, [data-e2e='slideList']"
+    );
+    var i;
+    for (i = 0; i < roots.length; i++) {
+      if (roots[i].getAttribute("data-pcwtm-scroll") === "1") continue;
+      roots[i].setAttribute("data-pcwtm-scroll", "1");
+      roots[i].addEventListener("scroll", schedule, { passive: true });
+    }
+  }
+
+  function bindSlideSettle() {
+    var lists = document.querySelectorAll("#slidelist, [data-e2e='slideList']");
+    var i;
+    for (i = 0; i < lists.length; i++) {
+      if (lists[i].getAttribute("data-pcwtm-settle") === "1") continue;
+      lists[i].setAttribute("data-pcwtm-settle", "1");
+      lists[i].addEventListener("transitionend", schedule, { passive: true });
+    }
+  }
+
+  function bindMediaSettle() {
+    var vids = document.querySelectorAll("video");
+    var i;
+    for (i = 0; i < vids.length && i < 8; i++) {
+      if (vids[i].getAttribute("data-pcwtm-play") === "1") continue;
+      vids[i].setAttribute("data-pcwtm-play", "1");
+      vids[i].addEventListener("play", schedule, true);
+    }
   }
 
   function onNavigate() {
@@ -1070,15 +1499,30 @@
     bindTraverseIntercept();
   }
 
+  function isLoginWallNode(el) {
+    return !!(
+      el &&
+      el.closest &&
+      el.closest(
+        "#login-panel-new, #douyin-login-new-id, #douyin_login_comp_flat_panel, #douyin_login_comp_single_panel, #douyin_login_landing_flat_container, #douyin_login_comp_mobile_code, [id^='login-full-panel-']"
+      )
+    );
+  }
+
   function onSameOriginClick(e) {
     var t = e.target;
+    /* Login wall: do not capture. Official closer must receive the click.
+     * Live e2p at the「Douyin」title-end X: title DIV or closer svg/path,
+     * not a logo <a>. Agreement / jingxuan links under the same card
+     * still hit shouldHijackLeave if we fall through. */
+    if (isLoginWallNode(t)) return;
     if (wantMobile() && isVideoPath() && t && t.closest) {
       var back = t.closest("a, button, [role='button']");
-      if (back && !back.closest("#pcwtm-drawer")) {
+      if (back && !back.closest("#pcwtm-drawer") && !isOfficialSwitch(back) && !isLoginWallNode(back)) {
         var backLabel = labelOf(back);
         var href = back.href || back.getAttribute("href") || "";
         if (
-          /^(返回|Back|关闭)$/i.test(backLabel) ||
+          /^(返回|Back)$/i.test(backLabel) ||
           back.getAttribute("data-pcwtm-videoback") === "1" ||
           (href && isDumpDest(href) && !/^(精选|推荐|For You|Topick)$/i.test(backLabel))
         ) {
@@ -1105,6 +1549,10 @@
         return;
       }
       if (shouldHijackLeave(a.href)) {
+        if (isOfficialSwitch(a)) {
+          onNavigate();
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         goRecommend();
