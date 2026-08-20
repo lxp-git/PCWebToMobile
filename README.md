@@ -6,7 +6,7 @@
 
 ## 许愿
 
-打开 → [许愿](https://github.com/lxp-git/PCWebToMobile/issues/new?template=wish.yml)
+打开 → [许愿](https://github.com/lxp-git/PCWebToMobile/issues/new?template=wish.md)
 
 填 PC 网址，和你真正会用的功能（首页、搜索、播放、评论…）。提交后会开始做脚本，做完在这条 Issue 里回安装方式。
 
