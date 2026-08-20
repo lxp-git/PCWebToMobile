@@ -233,9 +233,63 @@
     );
   }
 
+  function sheetChromeNodes(panel) {
+    var root = panel.querySelector("#relatedVideoCard") || panel;
+    try {
+      return root.querySelectorAll(":scope > *, :scope > * > *, :scope > * > * > *");
+    } catch (e) {
+      return root.children;
+    }
+  }
+
+  function markSheetTabs(panel) {
+    var nodes = sheetChromeNodes(panel);
+    var best = null;
+    var bestLen = 1e6;
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.getAttribute && el.getAttribute("data-e2e") === "comment-list") continue;
+      var t = (el.textContent || "").replace(/\s+/g, " ").trim();
+      if (!/详情/.test(t)) continue;
+      if (!/(Comments|评论|Videos)/.test(t)) continue;
+      if (t.length > 72) continue;
+      if (t.length < bestLen) {
+        bestLen = t.length;
+        best = el;
+      }
+    }
+    var prev = panel.querySelector(".pcwtm-sheet-tabs");
+    if (prev && prev !== best) prev.classList.remove("pcwtm-sheet-tabs");
+    if (best) best.classList.add("pcwtm-sheet-tabs");
+  }
+
+  function hideSheetPromos(panel) {
+    var nodes = sheetChromeNodes(panel);
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (el.id === "merge-all-comment-container") continue;
+      if (el.getAttribute && el.getAttribute("data-e2e") === "comment-list") continue;
+      if (el.querySelector && el.querySelector("[data-e2e='comment-list']")) continue;
+      if (el.children && el.children.length > 6) continue;
+      var t = (el.textContent || "").replace(/\s+/g, " ").trim();
+      if (!t || t.length > 16) continue;
+      if (!/大家都在搜|猜你想搜|相关搜索|热门搜索/.test(t)) continue;
+      var box = el.closest("a") || el.parentElement || el;
+      if (!box || box === panel) continue;
+      if (box.id === "relatedVideoCard" || box.id === "videoSideCard" || box.id === "videoSideBar")
+        continue;
+      box.classList.add("pcwtm-hide-promo");
+    }
+  }
+
   function syncCommentClose() {
     var panel = commentPanel();
-    if (panel) markOfficialClose(panel);
+    if (!panel) return;
+    markOfficialClose(panel);
+    markSheetTabs(panel);
+    hideSheetPromos(panel);
   }
 
   function closeDrawer() {
