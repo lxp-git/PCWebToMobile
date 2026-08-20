@@ -15,7 +15,7 @@
 | 站点 | 状态 | 下载 |
 | --- | --- | --- |
 | 哔哩哔哩 `www.bilibili.com` | 首页 + 播放页可用 | [下载页](sites/bilibili/) · [bilibili.user.js](sites/bilibili/bilibili.user.js) |
-| 抖音 `www.douyin.com` | 首页上下滑 + 视频详情/评论 | [下载页](sites/douyin/) · [douyin.user.js](sites/douyin/douyin.user.js) |
+| 抖音 `www.douyin.com` | 首页上下滑 + 视频详情/评论 · 0.2.6 | [下载页](sites/douyin/) · [douyin.user.js](sites/douyin/douyin.user.js) |
 
 ### 怎么用（iOS Alook）
 
@@ -48,17 +48,18 @@ python3 sites/bilibili/build.py
 
 会重新生成可安装的 `bilibili.user.js`。
 
-### 抖音 0.1.0
+### 抖音 0.2.6
 
 已经能用：
 
-- 推荐页 `/?recommend=1`：去掉左侧导航，当前视频铺满窄屏，点赞/评论/收藏仍在右侧；上下滑点官网自己的切换按钮
-- 未登录打开 `/` 现在常先落到精选：网格收成单列，点进 `modal_id` 仍是官网竖滑
-- 评论：推荐流里点评论会铺成底部抽屉（可读，发评仍要登录）；`/video/` 详情页播放器全宽，评论跟在下面
-- 菜单抽屉仍能进推荐、精选、关注、我的
-- 站内链接尽量同页打开，不新开标签
+- 推荐页入口是 `/?recommend=1&from_nav=1`（菜单「推荐 / For You」带上 `pcwtm`）。官网可能会改掉 `from_nav`，脚本只保证 `pcwtm` 还在
+- 未登录登录墙：收掉左侧二维码列，把 `article#douyin_login_comp_flat_panel` 锁在视口宽里，官网关闭 X 留在屏内。没有另做关闭按钮
+- 推荐竖滑：视频铺满屏，顶栏收掉，只留一层薄菜单；点赞/评论/收藏/分享仍是官网自己的控件
+- 直接打开 `/video/:id` 后浏览器返回（以及官网「返回」）会落到精选电脑版。脚本在离开详情时记下，下一页若是 `/`、`/jingxuan` 或精选网格，就 `replace` 到 `/?recommend=1&from_nav=1`（带 `pcwtm`）。菜单里点「精选」仍去精选
+- 未登录打开 `/` 现在常先落到精选：网格收成单列（精选本身不承诺）；要上下滑请点菜单里的「推荐」
+- 抽屉打开才扫一遍导航链接（`textContent`），不再对 `document` 做 subtree MutationObserver，也不在每帧跑 `innerText`
 
-还没专门做：搜索结果页、直播、个人主页、电商、消息（脚本会挂上，但只有全局去 min-width）。官网窄屏有时会把推荐导航弹回精选，用抽屉里的「推荐」再进一次。
+搜索 / 直播 / 主页 / 电商 / 消息没有专门布局。已装过旧版的需要把脚本删掉再重新粘贴一遍。
 
 改样式编 `sites/douyin/douyin.css`，改逻辑编 `sites/douyin/inject.js`，然后：
 

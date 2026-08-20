@@ -1,6 +1,10 @@
 /* PCWebToMobile · douyin
  * Applied under html.pcwtm (userscript) or @media (max-width: 920px) (Stylus).
- * Layout only — keep Douyin's own colors, type, player, and comments.
+ * Layout only — keep Douyin's own DOM, player, actions, and comments.
+ *
+ * Tokens once, under html.pcwtm: near-black video + quiet gray + Douyin's red.
+ * Overlay chrome is thin; unused PC rails stay in the DOM (drawer reads them)
+ * but are hidden with display / content-visibility, not JS loops.
  *
  * Selectors verified on the official PC shell (2026-08-20, logged-out):
  *   #root #douyin-header #douyin-header-menuCt
@@ -16,16 +20,30 @@
  *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar
  * Hashed class names (e.g. .eRu21rp0) are avoided — they rotate.
  * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.
+ * JS adds html.pcwtm-comments only when #videoSideCard / #videoSideBar official
+ * width is > 0 (live: closed=0, open≈391). :has(comment-list) stays true after
+ * official close — do not use it as the open signal.
+ * JS may mark the official close node with .pcwtm-host-close (host node only).
+ * Recommend door is /?recommend=1&from_nav=1 (bare ?recommend=1 bounces to jingxuan).
+ * Login wall (QA 500px, 2026-08-20): #login-panel-new is already 500.
+ * Overflow is article#douyin_login_comp_flat_panel (726, QR + phone).
+ * Left #douyin_login_comp_scan_code / right #douyin_login_comp_single_panel.
+ * Official X sits on the right column (~x=667) — keep it in-viewport.
  */
 
 html.pcwtm {
-  --pcwtm-bar: 52px;
-  --pcwtm-pink: #fe2c55;
-  --pcwtm-text: #161823;
-  --pcwtm-muted: #8a8b91;
   --pcwtm-bg: #000;
-  --pcwtm-gap: 8px;
+  --pcwtm-elevated: #161616;
+  --pcwtm-fg: #ececec;
+  --pcwtm-muted: #8a8a8a;
+  --pcwtm-accent: #fe2c55;
+  --pcwtm-border: rgba(236, 236, 236, 0.12);
+  --pcwtm-space: 8px;
+  --pcwtm-radius: 8px;
+  --pcwtm-bar: 48px;
+  --pcwtm-sheet: min(52dvh, 420px);
   --header-height: var(--pcwtm-bar);
+  color-scheme: dark;
 }
 
 html.pcwtm,
@@ -40,6 +58,12 @@ html.pcwtm body {
 html.pcwtm body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+html.pcwtm.pcwtm-recommend body,
+html.pcwtm.pcwtm-modal body {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* Shells that lock a desktop min-width (~580px+ was observed at 390 CSS px) */
@@ -64,34 +88,50 @@ html.pcwtm [data-e2e="player-container"] {
   box-sizing: border-box !important;
 }
 
-/* ---------- Left nav → drawer ---------- */
+/* ---------- Unused PC columns: hide in CSS, keep in DOM ---------- */
 
 html.pcwtm #douyin-navigation,
 html.pcwtm [data-e2e="douyin-navigation"],
 html.pcwtm #douyin-sidebar,
-html.pcwtm #douyin-sidebar-new {
+html.pcwtm #douyin-sidebar-new,
+html.pcwtm img#douyin-temp-sidebar {
   display: none !important;
+  content-visibility: hidden;
+  contain: strict;
 }
 
-/* ---------- Header ---------- */
+/* ---------- Header (search stays; feed hides this for full-bleed) ---------- */
 
 html.pcwtm #douyin-header {
   position: fixed !important;
-  top: 0 !important;
+  top: env(safe-area-inset-top) !important;
   left: 0 !important;
   right: 0 !important;
   height: var(--pcwtm-bar) !important;
   min-height: var(--pcwtm-bar) !important;
   max-height: var(--pcwtm-bar) !important;
   margin: 0 !important;
-  padding: 0 6px 0 8px !important;
+  padding: 0 56px 0 var(--pcwtm-space) !important;
   z-index: 10050 !important;
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  background: rgba(22, 24, 35, 0.88) !important;
-  backdrop-filter: blur(16px) saturate(1.2);
-  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  gap: var(--pcwtm-space) !important;
+  background: var(--pcwtm-elevated) !important;
+  border-bottom: 1px solid var(--pcwtm-border);
+  color: var(--pcwtm-fg);
+}
+
+html.pcwtm.pcwtm-recommend #douyin-header,
+html.pcwtm.pcwtm-modal #douyin-header,
+html.pcwtm.pcwtm-comments #douyin-header {
+  display: none !important;
+  content-visibility: hidden;
+}
+
+html.pcwtm.pcwtm-recommend.pcwtm-searching:not(.pcwtm-comments) #douyin-header,
+html.pcwtm.pcwtm-modal.pcwtm-searching:not(.pcwtm-comments) #douyin-header {
+  display: flex !important;
+  content-visibility: visible;
 }
 
 html.pcwtm #douyin-header > div,
@@ -119,49 +159,58 @@ html.pcwtm #douyin-header [data-e2e="notice-entry"],
 html.pcwtm #douyin-header [data-e2e="im-entry"],
 html.pcwtm #douyin-header [data-e2e="something-button"] {
   display: none !important;
+  content-visibility: hidden;
 }
 
 html.pcwtm #douyin-header [id^="douyin-header-menu"] {
   flex: 0 0 auto !important;
 }
 
+/* ---------- Overlay chrome ---------- */
+
 html.pcwtm #pcwtm-menu-btn {
-  flex: 0 0 40px;
-  width: 40px;
-  height: 40px;
-  border: 0;
+  box-sizing: border-box;
+  width: 44px;
+  height: 44px;
   padding: 0;
   margin: 0;
-  background: transparent;
-  border-radius: 10px;
-  color: #fff;
+  border: 1px solid var(--pcwtm-border);
+  border-radius: var(--pcwtm-radius);
+  background: var(--pcwtm-elevated);
+  color: var(--pcwtm-fg);
   display: grid;
   place-items: center;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html.pcwtm #pcwtm-menu-btn.pcwtm-float {
   position: fixed;
-  top: calc(8px + env(safe-area-inset-top));
-  right: 8px;
+  top: calc(var(--pcwtm-space) + env(safe-area-inset-top));
+  right: calc(var(--pcwtm-space) + env(safe-area-inset-right));
   z-index: 10080;
-  background: rgba(22, 24, 35, 0.72);
 }
 
 html.pcwtm #pcwtm-menu-btn:active {
-  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.96);
 }
 
 html.pcwtm #pcwtm-mask {
-  display: none;
   position: fixed;
   inset: 0;
   z-index: 10060;
-  background: rgba(0, 0, 0, 0.48);
+  background: rgba(0, 0, 0, 0.46);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+  contain: strict;
+  touch-action: manipulation;
 }
 
 html.pcwtm.pcwtm-open #pcwtm-mask {
-  display: block;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 html.pcwtm #pcwtm-drawer {
@@ -169,43 +218,70 @@ html.pcwtm #pcwtm-drawer {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(82vw, 320px);
+  width: min(80vw, 320px);
   z-index: 10070;
-  background: #161823;
-  color: #fff;
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+  background: var(--pcwtm-elevated);
+  color: var(--pcwtm-fg);
+  border-left: 1px solid var(--pcwtm-border);
+  border-radius: 24px 0 0 24px; /* inner 8 + padding 16 */
   transform: translateX(105%);
-  transition: transform 0.22s ease;
+  transition: transform 200ms ease;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: calc(12px + env(safe-area-inset-top)) 8px 24px;
+  overscroll-behavior: contain;
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
   -webkit-overflow-scrolling: touch;
+  contain: layout paint style;
+  touch-action: manipulation;
 }
 
 html.pcwtm.pcwtm-open #pcwtm-drawer {
   transform: translateX(0);
 }
 
-html.pcwtm #pcwtm-drawer a {
+html.pcwtm #pcwtm-drawer a,
+html.pcwtm #pcwtm-drawer button {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  color: #fff;
+  width: 100%;
+  box-sizing: border-box;
+  gap: var(--pcwtm-space);
+  margin: 0 0 var(--pcwtm-space);
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--pcwtm-radius);
+  background: transparent;
+  color: var(--pcwtm-fg);
+  text-align: left;
   text-decoration: none;
+  font: inherit;
   font-size: 15px;
   line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-html.pcwtm #pcwtm-drawer a:active {
-  background: rgba(255, 255, 255, 0.08);
+html.pcwtm #pcwtm-drawer a:active,
+html.pcwtm #pcwtm-drawer button:active {
+  background: rgba(236, 236, 236, 0.06);
 }
 
-html.pcwtm #pcwtm-drawer .pcwtm-drawer-title {
-  padding: 8px 14px 14px;
-  font-size: 13px;
-  color: var(--pcwtm-muted);
-  letter-spacing: 0.08em;
+html.pcwtm #pcwtm-drawer a[aria-current="page"] {
+  color: var(--pcwtm-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.pcwtm #pcwtm-mask,
+  html.pcwtm #pcwtm-drawer,
+  html.pcwtm #pcwtm-menu-btn {
+    transition: none;
+  }
+
+  html.pcwtm #pcwtm-menu-btn:active {
+    transform: none;
+  }
 }
 
 /* ---------- Homepage recommend slider (/?recommend=1) ---------- */
@@ -215,6 +291,11 @@ html.pcwtm #douyin-right-container {
   padding: 0 !important;
   padding-top: var(--pcwtm-bar) !important;
   left: 0 !important;
+}
+
+html.pcwtm.pcwtm-recommend #douyin-right-container,
+html.pcwtm.pcwtm-modal #douyin-right-container {
+  padding-top: 0 !important;
 }
 
 html.pcwtm #slidelist,
@@ -227,6 +308,21 @@ html.pcwtm [data-e2e="slideList"] {
   padding: 0 !important;
   padding-right: 0 !important;
   left: 0 !important;
+}
+
+html.pcwtm.pcwtm-recommend #slidelist,
+html.pcwtm.pcwtm-recommend #slidelist.recommend-slidelist,
+html.pcwtm.pcwtm-recommend [data-e2e="slideList"],
+html.pcwtm.pcwtm-modal #slidelist,
+html.pcwtm.pcwtm-modal #slidelist.recommend-slidelist,
+html.pcwtm.pcwtm-modal [data-e2e="slideList"] {
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+}
+
+html.pcwtm #slidelist [data-e2e="feed-video"]:not([data-e2e="feed-active-video"]) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100dvh;
 }
 
 html.pcwtm #slidelist .page-recommend-container,
@@ -264,15 +360,17 @@ html.pcwtm .basePlayerContainer video {
   object-fit: contain;
 }
 
-/* Right action column stays over the player (was falling off-screen at 390px) */
+/* Official like / comment / favorite: keep host widgets, don't restyle as stickers */
 html.pcwtm .basePlayerContainer .positionBox,
 html.pcwtm [data-e2e="feed-active-video"] .positionBox {
   position: absolute !important;
-  right: 6px !important;
-  bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;
+  bottom: calc(80px + env(safe-area-inset-bottom)) !important;
   left: auto !important;
   transform: none !important;
   z-index: 5;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 html.pcwtm [data-e2e="feed-comment-icon"],
@@ -280,6 +378,7 @@ html.pcwtm [data-e2e="video-player-digg"],
 html.pcwtm [data-e2e="video-player-collect"],
 html.pcwtm [data-e2e="video-player-share"] {
   pointer-events: auto;
+  touch-action: manipulation;
 }
 
 html.pcwtm #video-info-wrap,
@@ -287,7 +386,7 @@ html.pcwtm .video-info-detail,
 html.pcwtm [data-e2e="video-info"] {
   max-width: calc(100% - 72px) !important;
   width: auto !important;
-  left: 8px !important;
+  left: calc(var(--pcwtm-space) + env(safe-area-inset-left)) !important;
   right: auto !important;
   bottom: calc(16px + env(safe-area-inset-bottom)) !important;
 }
@@ -296,17 +395,15 @@ html.pcwtm [data-e2e="video-info"] {
 html.pcwtm [data-e2e="video-switch-next-arrow"],
 html.pcwtm [data-e2e="video-switch-prev-arrow"],
 html.pcwtm .xgplayer-playswitch {
-  right: 8px !important;
+  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;
   left: auto !important;
 }
 
-/* Comments / related card: bottom sheet only when the official panel is open */
-html.pcwtm #videoSideCard:has(#relatedVideoCard),
-html.pcwtm #videoSideCard:has(#merge-all-comment-container),
-html.pcwtm #videoSideCard:has([data-e2e="comment-list"]),
-html.pcwtm #videoSideBar:has(#relatedVideoCard),
-html.pcwtm #videoSideBar:has(#merge-all-comment-container),
-html.pcwtm #videoSideBar:has([data-e2e="comment-list"]) {
+/* Bottom sheet only while html.pcwtm-comments (official side width > 0).
+ * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay
+ * in the DOM at width 0. :has() would keep this block applied. */
+html.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,
+html.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel {
   position: fixed !important;
   left: 0 !important;
   right: 0 !important;
@@ -314,26 +411,160 @@ html.pcwtm #videoSideBar:has([data-e2e="comment-list"]) {
   top: auto !important;
   width: 100% !important;
   max-width: 100% !important;
-  height: 72% !important;
-  max-height: 72dvh !important;
-  background: #161823 !important;
+  height: var(--pcwtm-sheet) !important;
+  max-height: var(--pcwtm-sheet) !important;
+  background: var(--pcwtm-elevated) !important;
+  border-top: 1px solid var(--pcwtm-border);
+  border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */
   z-index: 10040 !important;
-  overflow: hidden !important;
+  overflow: visible !important;
+  overscroll-behavior: contain;
+  padding: 0 0 env(safe-area-inset-bottom);
+  box-sizing: border-box !important;
+  pointer-events: auto;
 }
 
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .positionBox,
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .xgplayer-playswitch,
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .positionBox,
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .xgplayer-playswitch {
+/* Rail stays above the shorter sheet. Do not pointer-events:none the box
+ * (that swallowed icon / 「评论 ⓧ」 taps). Hide like/fav/share only. */
+html.pcwtm.pcwtm-comments .positionBox [data-e2e="video-player-digg"],
+html.pcwtm.pcwtm-comments .positionBox [data-e2e="video-player-collect"],
+html.pcwtm.pcwtm-comments .positionBox [data-e2e="video-player-share"] {
   visibility: hidden !important;
 }
 
-html.pcwtm #relatedVideoCard,
-html.pcwtm #merge-all-comment-container,
-html.pcwtm .comment-mainContent[data-e2e="comment-list"],
-html.pcwtm [data-e2e="comment-list"] {
+html.pcwtm.pcwtm-comments .positionBox {
+  bottom: calc(var(--pcwtm-sheet) + 8px) !important;
+  z-index: 10050;
+  pointer-events: auto;
+}
+
+html.pcwtm.pcwtm-comments .positionBox [data-e2e="feed-comment-icon"] {
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+html.pcwtm.pcwtm-comments .xgplayer-playswitch {
+  visibility: hidden !important;
+}
+
+/* Hamburger is not the comment close — park it top-left while the sheet is open */
+html.pcwtm.pcwtm-comments #pcwtm-menu-btn.pcwtm-float {
+  right: auto;
+  left: calc(8px + env(safe-area-inset-left));
+  top: calc(8px + env(safe-area-inset-top));
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Official X only: 44×44 on the host node. Center the glyph in the hit box.
+ * No ::after overlay — that blocked the tab row. z-index above the tabs. */
+html.pcwtm .pcwtm-host-close {
+  box-sizing: border-box !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 6;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.pcwtm .pcwtm-host-close svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* Official sheet tabs: one 44px row, no wrap, no chips. Same sheet bg. */
+html.pcwtm.pcwtm-comments #videoSideCard [role="tablist"],
+html.pcwtm.pcwtm-comments #videoSideBar [role="tablist"],
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: var(--pcwtm-elevated) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-right: 48px;
+  box-sizing: border-box !important;
+}
+
+html.pcwtm.pcwtm-comments #videoSideCard [role="tablist"]::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments #videoSideBar [role="tablist"]::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+html.pcwtm.pcwtm-comments #videoSideCard [role="tab"],
+html.pcwtm.pcwtm-comments #videoSideBar [role="tab"],
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > *:not(.semi-tabs-ink-bar) {
+  flex: 0 0 auto !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  padding: 0 12px !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  color: var(--pcwtm-muted) !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+html.pcwtm.pcwtm-comments #videoSideCard [role="tab"][aria-selected="true"],
+html.pcwtm.pcwtm-comments #videoSideBar [role="tab"][aria-selected="true"],
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab-active,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab-active,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > [aria-selected="true"] {
+  color: var(--pcwtm-fg) !important;
+}
+
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-ink-bar,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-ink-bar {
+  background: var(--pcwtm-accent) !important;
+}
+
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs,
+html.pcwtm.pcwtm-comments #relatedVideoCard {
+  background: var(--pcwtm-elevated) !important;
+}
+
+html.pcwtm.pcwtm-comments #relatedVideoCard,
+html.pcwtm.pcwtm-comments #merge-all-comment-container,
+html.pcwtm.pcwtm-comments .comment-mainContent[data-e2e="comment-list"],
+html.pcwtm.pcwtm-comments [data-e2e="comment-list"] {
   width: 100% !important;
   max-width: 100% !important;
+}
+
+html.pcwtm.pcwtm-comments #videoSideCard #merge-all-comment-container,
+html.pcwtm.pcwtm-comments #videoSideBar #merge-all-comment-container,
+html.pcwtm.pcwtm-comments #videoSideCard [data-e2e="comment-list"],
+html.pcwtm.pcwtm-comments #videoSideBar [data-e2e="comment-list"] {
+  max-height: calc(var(--pcwtm-sheet) - 44px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 html.pcwtm [data-e2e="comment-item"] {
@@ -391,7 +622,7 @@ html.pcwtm [data-e2e="video-detail"] .xgplayer {
   min-height: 56vw !important;
   aspect-ratio: 9 / 16;
   max-height: 70dvh !important;
-  background: #000;
+  background: var(--pcwtm-bg);
 }
 
 html.pcwtm [data-e2e="video-detail"] .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
@@ -436,6 +667,7 @@ html.pcwtm .discover-tab-bar {
   overflow-x: auto !important;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  touch-action: pan-x;
 }
 
 html.pcwtm .discover-tab-bar::-webkit-scrollbar {
@@ -446,11 +678,11 @@ html.pcwtm .jingxuanFeedList,
 html.pcwtm .jingxuan-scroll-element {
   display: flex !important;
   flex-direction: column !important;
-  gap: 10px !important;
+  gap: var(--pcwtm-space) !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  padding: 8px var(--pcwtm-gap) 72px !important;
+  padding: var(--pcwtm-space) var(--pcwtm-space) 72px !important;
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }
@@ -462,7 +694,7 @@ html.pcwtm .jingxuan-scroll-element > div {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  gap: 10px !important;
+  gap: var(--pcwtm-space) !important;
 }
 
 html.pcwtm .discover-video-card-item,
@@ -477,9 +709,9 @@ html.pcwtm #douyin-right-container ul[data-e2e="scroll-list"],
 html.pcwtm #search-result-container ul[data-e2e="scroll-list"] {
   display: flex !important;
   flex-direction: column !important;
-  gap: 10px !important;
+  gap: var(--pcwtm-space) !important;
   width: 100% !important;
-  padding: 8px var(--pcwtm-gap) 72px !important;
+  padding: var(--pcwtm-space) var(--pcwtm-space) 72px !important;
   box-sizing: border-box !important;
 }
 
@@ -494,26 +726,68 @@ html.pcwtm .search-result-card {
 html.pcwtm.pcwtm-modal #slidelist,
 html.pcwtm [class*="isCssFullScreen"] #slidelist,
 html.pcwtm #slidelist[class*="isCssFullScreen"] {
-  height: calc(100dvh - var(--pcwtm-bar)) !important;
+  height: 100dvh !important;
 }
 
 /* ---------- Hide download / get-app chrome, keep login ---------- */
 
-html.pcwtm img#douyin-temp-sidebar,
 html.pcwtm a[href*="apps.apple.com"],
 html.pcwtm a[href*="itunes.apple.com"],
 html.pcwtm [class*="get_app"],
-html.pcwtm [class*="get-app"] {
+html.pcwtm [class*="get-app"],
+html.pcwtm .pcwtm-hide-promo,
+html.pcwtm #videoSideCard [class*="everyone-search"],
+html.pcwtm #videoSideBar [class*="everyone-search"],
+html.pcwtm #videoSideCard [class*="EveryoneSearch"],
+html.pcwtm #videoSideBar [class*="EveryoneSearch"] {
   display: none !important;
+  content-visibility: hidden;
+}
+
+/* Outer shells already fit ~500. Do not keep unlocking #login-panel-new.
+ * Clip leftover overflow until the inner article shrinks. */
+html.pcwtm #login-panel-new,
+html.pcwtm #douyin-login-new-id {
+  overflow-x: hidden;
+  z-index: 10120;
+}
+
+/* Inner desktop two-column (QA: 726) is the overflow. Stack / drop QR. */
+html.pcwtm article#douyin_login_comp_flat_panel,
+html.pcwtm article#douyin_login_comp_flat_panel > *,
+html.pcwtm article#douyin_login_comp_flat_panel > * > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html.pcwtm article#douyin_login_comp_flat_panel {
+  width: 100% !important;
+  max-width: 100vw !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  overflow-x: hidden !important;
+}
+
+html.pcwtm #douyin_login_comp_scan_code {
+  display: none !important;
+}
+
+html.pcwtm article#douyin_login_comp_flat_panel #douyin_login_comp_single_panel,
+html.pcwtm #douyin_login_comp_single_panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
 }
 
 html.pcwtm [role="dialog"],
 html.pcwtm .semi-modal,
-html.pcwtm #login-panel-new,
 html.pcwtm #login-pannel,
 html.pcwtm [data-e2e="recommend-guide-mask"],
 html.pcwtm #douyin-web-recommend-guide-mask {
   max-width: 100vw !important;
+  min-width: 0 !important;
 }
 
 /* ---------- Search / profile: global min-width only ---------- */
