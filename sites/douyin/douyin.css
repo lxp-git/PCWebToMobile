@@ -450,6 +450,7 @@ html.pcwtm [data-e2e="player-container"] {
   max-width: 100% !important;
   height: 100% !important;
   left: 0 !important;
+  overflow: visible !important;
 }
 
 html.pcwtm .xgplayer video,
@@ -503,16 +504,28 @@ html.pcwtm [data-e2e$="-share"] {
   opacity: 1 !important;
 }
 
-/* Official bottom player chrome (quality / speed / PiP / progress) covers watch.
- * Never display:none .xgplayer-controls — detail may host the rail there
- * under e2e names other than video-player-digg / feed-comment-icon. */
+/* Official bottom chrome covers watch. Hide those nodes only.
+ * Live after wall close (unskinned 1280, official bounce): .positionBox
+ * is a child of .xgplayer / .basePlayerContainer, NOT of .xgplayer-controls
+ * (inControls=false; controls has only video-player-auto-play).
+ * Stay-on-/video/:id headless is error-page (no player). QA's detail rail
+ * may still nest .positionBox under .xgplayer-controls. The old
+ * .xgplayer-controls:not(:has(video-player-digg)):not(:has(feed-comment-icon))
+ * { display:none } then kills the whole tree, including .positionBox,
+ * when e2e names differ or icons are not mounted yet.
+ * NEVER display:none the .xgplayer-controls host. */
 html.pcwtm .xgplayer-progress,
 html.pcwtm .xgplayer-pip,
 html.pcwtm .xgplayer-fullscreen,
 html.pcwtm .xgplayer-page-full-screen,
+html.pcwtm .xgplayer-cssfullscreen,
 html.pcwtm .xgplayer-volume,
+html.pcwtm .xgplayer-setting,
 html.pcwtm .xgplayer-setting-list,
 html.pcwtm .xgplayer-playbackrate,
+html.pcwtm .xgplayer-playback-rate,
+html.pcwtm .xgplayer-definition,
+html.pcwtm .xgplayer-quality,
 html.pcwtm .xgplayer-play,
 html.pcwtm .xgplayer-time,
 html.pcwtm [data-e2e="xgplayer-page-full-screen"],
@@ -523,14 +536,19 @@ html.pcwtm [data-e2e="video-play-more"]:not(:has([data-e2e="video-player-digg"])
   content-visibility: hidden;
 }
 
-html.pcwtm .xgplayer-controls {
+html.pcwtm .xgplayer-controls,
+html.pcwtm xg-controls.xgplayer-controls,
+html.pcwtm .xgplayer-controls .positionBox {
   display: flex !important;
   content-visibility: visible !important;
   visibility: visible !important;
   opacity: 1 !important;
-  pointer-events: none;
   background: transparent !important;
 }
+html.pcwtm .xgplayer-controls {
+  pointer-events: none;
+}
+html.pcwtm .xgplayer-controls .positionBox,
 html.pcwtm .xgplayer-controls [data-e2e="video-player-digg"],
 html.pcwtm .xgplayer-controls [data-e2e="feed-comment-icon"],
 html.pcwtm .xgplayer-controls [data-e2e="video-player-collect"],
