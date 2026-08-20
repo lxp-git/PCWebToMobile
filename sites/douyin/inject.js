@@ -1,10 +1,10 @@
 (function () {
   "use strict";
 
-  // After first paint we do not observe document with subtree:true.
-  // Watch the smallest live roots (childList only, plus style/class on
-  // comment side panels). Coalesce with one rAF. collectLinks runs only
-  // when the drawer opens (textContent, never innerText).
+  // After first paint we do not observe documentElement with subtree:true.
+  // Watch the smallest live roots (slidelist / sliderVideo / video-detail,
+  // plus style/class on comment side panels). Coalesce with one rAF.
+  // collectLinks runs only when the drawer opens (textContent, never innerText).
 
   var STYLE_ID = "pcwtm-douyin-css";
   var WIDTH_MAX = 920;
@@ -540,25 +540,149 @@
     return "";
   }
 
+  function isSlideWrapper(el) {
+    if (!el || el.nodeType !== 1) return true;
+    if (el.id === "sliderVideo" || el.id === "slidelist") return true;
+    return (el.getAttribute("data-e2e") || "") === "slideList";
+  }
+
+  function isAwemeCard(el) {
+    if (!el || isSlideWrapper(el)) return false;
+    var e2e = el.getAttribute("data-e2e") || "";
+    return e2e === "feed-active-video" || e2e === "feed-video" || e2e === "video-detail";
+  }
+
+  function playingBonus(el) {
+    if (!el || !el.querySelector) return 0;
+    var v = el.querySelector("video");
+    return v && !v.paused && v.readyState >= 2 ? 1000000 : 0;
+  }
+
   function idFromScope(scope) {
     var id = videoDigits(scope);
     if (id) return id;
-    if (scope && scope.querySelector) {
-      return videoDigits(scope.querySelector("[class*='video_']"));
+    if (!scope || !scope.querySelectorAll) return "";
+    var nodes = scope.querySelectorAll("[class*='video_']");
+    var i;
+    var best = "";
+    var bestScore = -1;
+    for (i = 0; i < nodes.length; i++) {
+      var nid = videoDigits(nodes[i]);
+      if (!nid) continue;
+      var score = visibleArea(nodes[i]) + playingBonus(nodes[i]);
+      if (score > bestScore) {
+        bestScore = score;
+        best = nid;
+      }
     }
-    return "";
+    return best;
   }
 
-  /* Do not use querySelector for feed-active-video / video-detail — after a
-   * /video/:id slide those attrs stay on the first card. Pick the in-view item. */
+  /* After /video/:id slide, #sliderVideo / first video-detail keep the old
+   * attrs. Use the in-view slidelist child (the new card), not the wrapper. */
+  function slideCards() {
+    var out = [];
+    var seen = [];
+    function add(el) {
+      if (!el || isSlideWrapper(el)) return;
+      if (seen.indexOf(el) !== -1) return;
+      seen.push(el);
+      out.push(el);
+    }
+    var list = document.getElementById("slidelist") || document.querySelector("[data-e2e='slideList']");
+    var i;
+    if (list && list.children) {
+      for (i = 0; i < list.children.length; i++) add(list.children[i]);
+    }
+    var feeds = document.querySelectorAll(
+      "[data-e2e='feed-video'], [data-e2e='feed-active-video'], [data-e2e='video-detail']"
+    );
+    for (i = 0; i < feeds.length; i++) add(feeds[i]);
+    return out;
+  }
+
+  /* Official feed-active-video / video_* often stay on the first card.
+   * Score the painted item: viewport, playing video, path id, center hit. */
+  function cardFromPoint() {
+    var x = Math.floor((window.innerWidth || 0) / 2);
+    var y = Math.floor((window.innerHeight || 0) * 0.42);
+    var hit = document.elementFromPoint(x, y);
+    if (!hit || !hit.closest) return null;
+    if (hit.closest("#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #pcwtm-drawer, #pcwtm-menu-btn"))
+      return null;
+    var card = hit.closest(
+      "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail']"
+    );
+    return card && !isSlideWrapper(card) ? card : null;
+  }
+
+  function pickActiveCard(nodes) {
+    var pathId = pathAwemeId();
+    var pointed = cardFromPoint();
+    var best = null;
+    var bestScore = 0;
+    var i;
+    var vh = window.innerHeight || 0;
+    var mid = vh / 2;
+    for (i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (!el || isSlideWrapper(el)) continue;
+      var area = visibleArea(el);
+      if (area <= 0) continue;
+      var score = area;
+      var id = idFromScope(el);
+      if (id && pathId && id === pathId) score += 2000000;
+      score += playingBonus(el);
+      if (
+        pointed &&
+        (el === pointed || (el.contains && el.contains(pointed)) || (pointed.contains && pointed.contains(el)))
+      ) {
+        score += 3000000;
+      }
+      try {
+        var op = parseFloat(window.getComputedStyle(el).opacity);
+        if (!isNaN(op)) score += op * 8000;
+      } catch (e1) {}
+      var r = el.getBoundingClientRect();
+      score -= Math.min(Math.abs((r.top + r.bottom) / 2 - mid), vh);
+      if (score > bestScore) {
+        bestScore = score;
+        best = el;
+      }
+    }
+    return bestScore > 6400 || (best && playingBonus(best)) ? best : null;
+  }
+
+  function asCard(el) {
+    if (!el || el === document.body) return el;
+    if (isAwemeCard(el)) return el;
+    if (el.closest) {
+      var host = el.closest(
+        "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail']"
+      );
+      if (host && !isSlideWrapper(host) && visibleArea(host) > 0) return host;
+    }
+    if (el.querySelectorAll) {
+      var inner = pickActiveCard(
+        el.querySelectorAll("[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail']")
+      );
+      if (inner) return inner;
+    }
+    return isSlideWrapper(el) ? null : el;
+  }
+
   function activeVideoRoot() {
-    var best =
-      pickMostVisible(document.querySelectorAll("[data-e2e='feed-active-video']")) ||
-      pickMostVisible(document.querySelectorAll("[data-e2e='feed-video']")) ||
-      pickMostVisible(document.querySelectorAll("[data-e2e='video-detail']"));
+    var best = asCard(pickActiveCard(slideCards()));
     if (best) return best;
+    best = asCard(pickActiveCard(document.querySelectorAll("[data-e2e='video-detail']")));
+    if (best) return best;
+    var pointed = asCard(cardFromPoint());
+    if (pointed) return pointed;
     var slider = document.getElementById("sliderVideo");
-    if (slider && visibleArea(slider) > 6400) return slider;
+    if (slider) {
+      best = asCard(slider);
+      if (best) return best;
+    }
     return document.querySelector("[data-e2e='video-detail']") || document.body;
   }
 
@@ -676,7 +800,7 @@
     var best = null;
     var bestA = 0;
     var scoped = null;
-    var scopedA = 0;
+    var scopedA = -1;
     var i;
     for (i = 0; i < icons.length; i++) {
       var icon = icons[i];
@@ -685,12 +809,14 @@
         bestA = area;
         best = icon;
       }
-      if (scope && scope.contains && scope.contains(icon) && area > scopedA) {
+      if (scope && scope.contains && scope.contains(icon) && area >= scopedA) {
         scopedA = area;
         scoped = icon;
       }
     }
-    return (scoped && scopedA > 0 ? scoped : null) || best || null;
+    /* After slide the first icon can still be the largest leftover.
+     * Prefer the icon on the in-view card even if immersive hide made it 0×0. */
+    return scoped || best || null;
   }
 
   function findRailCommentChip() {
@@ -1187,14 +1313,18 @@
     }
     observedRoots = live;
     rootObservers = nextObs;
-    var slideOpts = {
+    /* Small-root subtree only — never documentElement. Slide updates class /
+     * data-e2e / video_* on nested cards, which childList-only misses. */
+    var slideSubtree = {
       childList: true,
+      subtree: true,
       attributes: true,
       attributeFilter: ["class", "style", "data-e2e"],
     };
-    watchRoot(document.getElementById("slidelist"), slideOpts);
+    watchRoot(document.getElementById("slidelist"), slideSubtree);
+    watchRoot(document.querySelector("[data-e2e='slideList']"), slideSubtree);
+    watchRoot(document.getElementById("sliderVideo"), slideSubtree);
     watchRoot(document.getElementById("douyin-header"), { childList: true });
-    watchRoot(document.getElementById("sliderVideo"), slideOpts);
     watchRoot(document.getElementById("douyin-right-container"), { childList: true });
     var sides = commentSidePanels();
     for (i = 0; i < sides.length; i++) {
@@ -1205,24 +1335,25 @@
       });
     }
     var locals = document.querySelectorAll(
-      "[data-e2e='video-detail'], [data-e2e='feed-active-video'], .leftContainer, .route-scroll-container, .parent-route-container"
+      "[data-e2e='video-detail'], .leftContainer, .route-scroll-container, .parent-route-container"
     );
-    for (i = 0; i < locals.length; i++) {
-      watchRoot(locals[i], slideOpts);
-    }
-    var list = document.getElementById("slidelist");
-    if (list && list.children) {
-      for (i = 0; i < list.children.length && i < 12; i++) {
-        watchRoot(list.children[i], slideOpts);
-      }
+    for (i = 0; i < locals.length && i < 8; i++) {
+      var loc = locals[i];
+      watchRoot(
+        loc,
+        (loc.getAttribute("data-e2e") || "") === "video-detail"
+          ? slideSubtree
+          : { childList: true }
+      );
     }
     bindDetailScroll();
     bindSlideSettle();
+    bindMediaSettle();
   }
 
   function bindDetailScroll() {
     var roots = document.querySelectorAll(
-      ".route-scroll-container, .parent-route-container, #slidelist"
+      ".route-scroll-container, .parent-route-container, #slidelist, [data-e2e='slideList']"
     );
     var i;
     for (i = 0; i < roots.length; i++) {
@@ -1233,10 +1364,23 @@
   }
 
   function bindSlideSettle() {
-    var list = document.getElementById("slidelist");
-    if (!list || list.getAttribute("data-pcwtm-settle") === "1") return;
-    list.setAttribute("data-pcwtm-settle", "1");
-    list.addEventListener("transitionend", schedule, { passive: true });
+    var lists = document.querySelectorAll("#slidelist, [data-e2e='slideList']");
+    var i;
+    for (i = 0; i < lists.length; i++) {
+      if (lists[i].getAttribute("data-pcwtm-settle") === "1") continue;
+      lists[i].setAttribute("data-pcwtm-settle", "1");
+      lists[i].addEventListener("transitionend", schedule, { passive: true });
+    }
+  }
+
+  function bindMediaSettle() {
+    var vids = document.querySelectorAll("video");
+    var i;
+    for (i = 0; i < vids.length && i < 8; i++) {
+      if (vids[i].getAttribute("data-pcwtm-play") === "1") continue;
+      vids[i].setAttribute("data-pcwtm-play", "1");
+      vids[i].addEventListener("play", schedule, true);
+    }
   }
 
   function onNavigate() {

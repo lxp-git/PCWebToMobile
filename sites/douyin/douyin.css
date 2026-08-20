@@ -391,9 +391,23 @@ html.pcwtm [data-e2e="video-player-share"] {
   touch-action: manipulation;
 }
 
+/* After /video/:id slide, immersive hide can leave the new card's icon at 0×0
+ * if class flags stayed on the first item. Restore the in-view card only. */
+html.pcwtm .pcwtm-active-aweme .positionBox,
+html.pcwtm .pcwtm-active-aweme [class*="hide-interaction-area"] .positionBox {
+  pointer-events: auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 html.pcwtm .pcwtm-active-aweme [data-e2e="feed-comment-icon"] {
   pointer-events: auto !important;
-  visibility: visible;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 48px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  max-height: none !important;
 }
 
 html.pcwtm #video-info-wrap,
@@ -663,8 +677,8 @@ html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme {
   content-visibility: visible;
 }
 
-html.pcwtm [data-e2e="video-detail"]:not(.pcwtm-active-aweme) [data-e2e="comment-list"],
-html.pcwtm [data-e2e="video-detail"]:not(.pcwtm-active-aweme) #comment-input-container {
+html.pcwtm [data-e2e="video-detail"]:not(.pcwtm-active-aweme):not(:has(.pcwtm-active-aweme)) [data-e2e="comment-list"],
+html.pcwtm [data-e2e="video-detail"]:not(.pcwtm-active-aweme):not(:has(.pcwtm-active-aweme)) #comment-input-container {
   content-visibility: hidden;
 }
 
@@ -675,7 +689,10 @@ html.pcwtm:not(:has(.pcwtm-active-aweme)) [data-e2e="video-detail"] [data-e2e="c
 html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
 html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme .leftContainer > div > div:has(.comment-mainContent[data-e2e="comment-list"]),
 html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme #comment-input-container,
-html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme [data-e2e="comment-list"] {
+html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme [data-e2e="comment-list"],
+html.pcwtm .pcwtm-active-aweme [data-e2e="video-detail"] .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
+html.pcwtm .pcwtm-active-aweme [data-e2e="video-detail"] #comment-input-container,
+html.pcwtm .pcwtm-active-aweme [data-e2e="video-detail"] [data-e2e="comment-list"] {
   position: relative !important;
   width: 100% !important;
   max-width: 100% !important;
