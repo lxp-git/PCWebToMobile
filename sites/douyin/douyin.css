@@ -2,12 +2,20 @@
  * Applied under html.pcwtm (userscript) or @media (max-width: 920px) (Stylus).
  * Layout only — keep Douyin's own colors, type, player, and comments.
  *
- * Selectors verified from the official PC shell (IDs + data-e2e) as of 2026:
- * #douyin-right-container, #douyin-header, #slidelist, #sliderVideo, #slideMode,
- * #videoSideBar / #videoSideCard, #video-info-wrap, #relatedVideoCard,
- * [data-e2e="douyin-navigation"|"feed-active-video"|"feed-video"|"comment-list"|
- * "video-detail"|"player-container"|"searchbar-input"].
- * Hashed class names (e.g. .N_HNXA04) are avoided — they rotate.
+ * Selectors verified on the official PC shell (2026-08-20, logged-out):
+ *   #root #douyin-header #douyin-header-menuCt
+ *   #douyin-navigation / [data-e2e="douyin-navigation"]
+ *   #douyin-sidebar #douyin-sidebar-new #douyin-right-container
+ *   Recommend swipe (/?recommend=1): #slidelist.recommend-slidelist #sliderVideo
+ *     [data-e2e="feed-active-video"|"slideList"|"feed-video"|"feed-comment-icon"]
+ *     .page-recommend-container .sliderVideo .playerContainer .basePlayerContainer
+ *     .xgplayer .positionBox #video-info-wrap
+ *   Comments on feed: #videoSideCard (visible) #videoSideBar (often width 0)
+ *     #relatedVideoCard #merge-all-comment-container [data-e2e="comment-list"]
+ *   /video/:id: [data-e2e="video-detail"|"player-container"] .leftContainer
+ *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar
+ * Hashed class names (e.g. .eRu21rp0) are avoided — they rotate.
+ * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.
  */
 
 html.pcwtm {
@@ -34,13 +42,13 @@ html.pcwtm body {
   padding-right: env(safe-area-inset-right);
 }
 
-/* Shells that lock a desktop min-width */
+/* Shells that lock a desktop min-width (~580px+ was observed at 390 CSS px) */
 html.pcwtm #root,
+html.pcwtm #root > div,
 html.pcwtm #douyin-right-container,
 html.pcwtm #douyin-header,
 html.pcwtm #slidelist,
 html.pcwtm #sliderVideo,
-html.pcwtm #slideMode,
 html.pcwtm .parent-route-container,
 html.pcwtm .route-scroll-container,
 html.pcwtm .page-recommend-container,
@@ -58,7 +66,10 @@ html.pcwtm [data-e2e="player-container"] {
 
 /* ---------- Left nav → drawer ---------- */
 
-html.pcwtm [data-e2e="douyin-navigation"] {
+html.pcwtm #douyin-navigation,
+html.pcwtm [data-e2e="douyin-navigation"],
+html.pcwtm #douyin-sidebar,
+html.pcwtm #douyin-sidebar-new {
   display: none !important;
 }
 
@@ -96,6 +107,12 @@ html.pcwtm #douyin-header input[type="search"],
 html.pcwtm #douyin-header input[type="text"] {
   font-size: 16px !important; /* iOS no-zoom */
   min-width: 0 !important;
+}
+
+html.pcwtm #douyin-header-menuCt {
+  flex: 0 0 auto !important;
+  max-width: 42% !important;
+  overflow: hidden !important;
 }
 
 html.pcwtm #douyin-header [id^="douyin-header-menu"] {
@@ -185,47 +202,47 @@ html.pcwtm #pcwtm-drawer .pcwtm-drawer-title {
   letter-spacing: 0.08em;
 }
 
-/* ---------- Homepage recommend slider ---------- */
+/* ---------- Homepage recommend slider (/?recommend=1) ---------- */
 
 html.pcwtm #douyin-right-container {
   margin: 0 !important;
   padding: 0 !important;
+  padding-top: var(--pcwtm-bar) !important;
   left: 0 !important;
 }
 
 html.pcwtm #slidelist,
+html.pcwtm #slidelist.recommend-slidelist,
 html.pcwtm [data-e2e="slideList"] {
   width: 100% !important;
-  height: 100dvh !important;
-  min-height: 100dvh !important;
+  height: calc(100dvh - var(--pcwtm-bar)) !important;
+  min-height: calc(100dvh - var(--pcwtm-bar)) !important;
   margin: 0 !important;
   padding: 0 !important;
   padding-right: 0 !important;
+  left: 0 !important;
 }
 
 html.pcwtm #slidelist .page-recommend-container,
 html.pcwtm #sliderVideo,
-html.pcwtm #slideMode,
 html.pcwtm [data-e2e="feed-active-video"],
 html.pcwtm [data-e2e="feed-video"],
 html.pcwtm .sliderVideo,
 html.pcwtm .slider-video {
   width: 100% !important;
   max-width: 100% !important;
-  height: 100dvh !important;
-  min-height: 100dvh !important;
+  height: 100% !important;
+  min-height: 0 !important;
   margin: 0 !important;
   left: 0 !important;
   right: 0 !important;
 }
 
 html.pcwtm #sliderVideo .playerContainer,
-html.pcwtm #slideMode .playerContainer,
 html.pcwtm [data-e2e="feed-active-video"] .playerContainer,
 html.pcwtm [data-e2e="feed-video"] .playerContainer,
 html.pcwtm .basePlayerContainer,
 html.pcwtm .xgplayer,
-html.pcwtm .xgplayer-container,
 html.pcwtm [data-e2e="player-container"] {
   width: 100% !important;
   max-width: 100% !important;
@@ -241,8 +258,9 @@ html.pcwtm .basePlayerContainer video {
   object-fit: contain;
 }
 
-/* Right action column stays over the player */
-html.pcwtm .basePlayerContainer .positionBox {
+/* Right action column stays over the player (was falling off-screen at 390px) */
+html.pcwtm .basePlayerContainer .positionBox,
+html.pcwtm [data-e2e="feed-active-video"] .positionBox {
   position: absolute !important;
   right: 6px !important;
   bottom: calc(88px + env(safe-area-inset-bottom)) !important;
@@ -251,23 +269,39 @@ html.pcwtm .basePlayerContainer .positionBox {
   z-index: 5;
 }
 
+html.pcwtm [data-e2e="feed-comment-icon"],
+html.pcwtm [data-e2e="video-player-digg"],
+html.pcwtm [data-e2e="video-player-collect"],
+html.pcwtm [data-e2e="video-player-share"] {
+  pointer-events: auto;
+}
+
 html.pcwtm #video-info-wrap,
 html.pcwtm .video-info-detail,
 html.pcwtm [data-e2e="video-info"] {
   max-width: calc(100% - 72px) !important;
+  width: auto !important;
   left: 8px !important;
   right: auto !important;
   bottom: calc(16px + env(safe-area-inset-bottom)) !important;
 }
 
-/* Comments / related card: bottom sheet on the feed */
-html.pcwtm #sliderVideo[data-e2e="feed-active-video"] #videoSideBar,
-html.pcwtm #slideMode[data-e2e="feed-active-video"] #videoSideBar,
-html.pcwtm #sliderVideo[data-e2e="feed-active-video"] #videoSideCard,
-html.pcwtm #slideMode[data-e2e="feed-active-video"] #videoSideCard,
-html.pcwtm [data-e2e="feed-active-video"] #videoSideBar,
-html.pcwtm [data-e2e="feed-active-video"] #videoSideCard {
-  position: absolute !important;
+/* Official up/down switchers: keep, tuck to the right edge */
+html.pcwtm [data-e2e="video-switch-next-arrow"],
+html.pcwtm [data-e2e="video-switch-prev-arrow"],
+html.pcwtm .xgplayer-playswitch {
+  right: 8px !important;
+  left: auto !important;
+}
+
+/* Comments / related card: bottom sheet only when the official panel is open */
+html.pcwtm #videoSideCard:has(#relatedVideoCard),
+html.pcwtm #videoSideCard:has(#merge-all-comment-container),
+html.pcwtm #videoSideCard:has([data-e2e="comment-list"]),
+html.pcwtm #videoSideBar:has(#relatedVideoCard),
+html.pcwtm #videoSideBar:has(#merge-all-comment-container),
+html.pcwtm #videoSideBar:has([data-e2e="comment-list"]) {
+  position: fixed !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
@@ -277,11 +311,12 @@ html.pcwtm [data-e2e="feed-active-video"] #videoSideCard {
   height: 72% !important;
   max-height: 72dvh !important;
   background: rgba(22, 24, 35, 0.96) !important;
-  z-index: 20 !important;
+  z-index: 40 !important;
   overflow: hidden !important;
 }
 
 html.pcwtm #relatedVideoCard,
+html.pcwtm #merge-all-comment-container,
 html.pcwtm .comment-mainContent[data-e2e="comment-list"],
 html.pcwtm [data-e2e="comment-list"] {
   width: 100% !important;
@@ -298,7 +333,13 @@ html.pcwtm [data-e2e="video-detail"] {
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
-  min-height: 100dvh !important;
+  min-height: calc(100dvh - var(--pcwtm-bar)) !important;
+}
+
+html.pcwtm [data-e2e="video-detail"] > * {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 html.pcwtm [data-e2e="video-detail"] .leftContainer {
@@ -310,6 +351,7 @@ html.pcwtm [data-e2e="video-detail"] .leftContainer {
 }
 
 html.pcwtm [data-e2e="video-detail"] [data-e2e="player-container"],
+html.pcwtm [data-e2e="video-detail"] .video-detail-container,
 html.pcwtm [data-e2e="video-detail"] .basePlayerContainer,
 html.pcwtm [data-e2e="video-detail"] .xgplayer {
   width: 100% !important;
@@ -323,8 +365,8 @@ html.pcwtm [data-e2e="video-detail"] .xgplayer {
 
 html.pcwtm [data-e2e="video-detail"] .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
 html.pcwtm [data-e2e="video-detail"] .leftContainer > div > div:has(.comment-mainContent[data-e2e="comment-list"]),
-html.pcwtm [data-e2e="video-detail"] #videoSideBar,
-html.pcwtm [data-e2e="video-detail"] #videoSideCard {
+html.pcwtm [data-e2e="video-detail"] #comment-input-container,
+html.pcwtm [data-e2e="video-detail"] [data-e2e="comment-list"] {
   position: relative !important;
   width: 100% !important;
   max-width: 100% !important;
@@ -336,6 +378,12 @@ html.pcwtm [data-e2e="video-detail"] #videoSideCard {
   bottom: auto !important;
 }
 
+html.pcwtm [data-e2e="aweme-relate"],
+html.pcwtm [data-e2e="related-video"] {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
 html.pcwtm [data-e2e="comment-input"],
 html.pcwtm textarea,
 html.pcwtm input[placeholder*="评论"] {
@@ -343,6 +391,41 @@ html.pcwtm input[placeholder*="评论"] {
 }
 
 /* ---------- 精选 / jingxuan grid → single column ---------- */
+
+html.pcwtm .discover-tab-container,
+html.pcwtm .discover-tab-bar {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+html.pcwtm .discover-tab-bar {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+html.pcwtm .discover-tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+html.pcwtm .jingxuan-scroll-element {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 8px var(--pcwtm-gap) 72px !important;
+  box-sizing: border-box !important;
+}
+
+html.pcwtm .discover-video-card-item,
+html.pcwtm .discover-video-card-img {
+  width: 100% !important;
+  max-width: 100% !important;
+}
 
 html.pcwtm #douyin-right-container ul[data-e2e="scroll-list"],
 html.pcwtm #search-result-container ul[data-e2e="scroll-list"] {
@@ -361,10 +444,11 @@ html.pcwtm .search-result-card {
   max-width: 100% !important;
 }
 
-/* modal_id overlay player */
+/* modal_id overlay player (jingxuan tap → swipe) */
+html.pcwtm.pcwtm-modal #slidelist,
 html.pcwtm [class*="isCssFullScreen"] #slidelist,
 html.pcwtm #slidelist[class*="isCssFullScreen"] {
-  height: 100dvh !important;
+  height: calc(100dvh - var(--pcwtm-bar)) !important;
 }
 
 /* ---------- Hide download / get-app chrome, keep login ---------- */
@@ -375,6 +459,15 @@ html.pcwtm a[href*="itunes.apple.com"],
 html.pcwtm [class*="get_app"],
 html.pcwtm [class*="get-app"] {
   display: none !important;
+}
+
+html.pcwtm [role="dialog"],
+html.pcwtm .semi-modal,
+html.pcwtm #login-panel-new,
+html.pcwtm #login-pannel,
+html.pcwtm [data-e2e="recommend-guide-mask"],
+html.pcwtm #douyin-web-recommend-guide-mask {
+  max-width: 100vw !important;
 }
 
 /* ---------- Search / profile: global min-width only ---------- */

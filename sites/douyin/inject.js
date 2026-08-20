@@ -5,10 +5,9 @@
   var WIDTH_MAX = 920;
 
   var FALLBACK_LINKS = [
-    { href: "https://www.douyin.com/", text: "推荐" },
+    { href: "https://www.douyin.com/?recommend=1", text: "推荐" },
     { href: "https://www.douyin.com/jingxuan", text: "精选" },
     { href: "https://www.douyin.com/follow", text: "关注" },
-    { href: "https://www.douyin.com/discover", text: "发现" },
     { href: "https://www.douyin.com/user/self", text: "我的" },
   ];
 
@@ -51,12 +50,28 @@
     if (el.textContent !== css) el.textContent = css;
   }
 
+  function syncPage() {
+    var path = location.pathname || "/";
+    var search = location.search || "";
+    var modal = /(?:\?|&)modal_id=/.test(search);
+    var recommend =
+      (path === "/" && /(?:\?|&)recommend=1/.test(search)) || !!document.getElementById("slidelist");
+    var jingxuan = path.indexOf("/jingxuan") === 0 && !modal;
+    var video = path.indexOf("/video/") === 0;
+    var root = document.documentElement;
+    root.classList.toggle("pcwtm-recommend", recommend);
+    root.classList.toggle("pcwtm-jingxuan", jingxuan);
+    root.classList.toggle("pcwtm-video", video);
+    root.classList.toggle("pcwtm-modal", modal);
+  }
+
   function syncMode() {
     var on = wantMobile();
     document.documentElement.classList.toggle("pcwtm", on);
     if (on) {
       applyViewport();
       applyStyle();
+      syncPage();
     }
     return on;
   }
@@ -82,12 +97,14 @@
       if (seen[href]) return;
       text = (text || "").replace(/\s+/g, " ").trim();
       if (!text || text.length > 24) return;
-      if (/下载|打开抖音|App/.test(text)) return;
+      if (/下载|打开抖音|Get APP|App/.test(text)) return;
       seen[href] = true;
       out.push({ href: href, text: text });
     }
     document
-      .querySelectorAll('[data-e2e="douyin-navigation"] a, #douyin-header a')
+      .querySelectorAll(
+        '[data-e2e="douyin-navigation"] a, #douyin-navigation a, #douyin-header a'
+      )
       .forEach(function (a) {
         add(a.href, a.innerText || a.getAttribute("title") || a.getAttribute("aria-label"));
       });
@@ -140,6 +157,8 @@
       drawer.setAttribute("aria-label", "站点菜单");
       document.body.appendChild(drawer);
     }
+
+    bindFeedSwipe();
   }
 
   function renderDrawer() {
@@ -153,6 +172,45 @@
           return '<a href="' + l.href + '">' + l.text + "</a>";
         })
         .join("");
+  }
+
+  function bindFeedSwipe() {
+    var list = document.getElementById("slidelist");
+    if (!list || list.getAttribute("data-pcwtm-swipe") === "1") return;
+    list.setAttribute("data-pcwtm-swipe", "1");
+    var startY = 0;
+    var startX = 0;
+    list.addEventListener(
+      "touchstart",
+      function (e) {
+        if (!e.touches || !e.touches[0]) return;
+        startY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+      },
+      { passive: true }
+    );
+    list.addEventListener(
+      "touchend",
+      function (e) {
+        if (!e.changedTouches || !e.changedTouches[0]) return;
+        var dy = e.changedTouches[0].clientY - startY;
+        var dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dy) < 60 || Math.abs(dy) < Math.abs(dx) * 1.4) return;
+        if (
+          e.target &&
+          e.target.closest &&
+          e.target.closest("#videoSideCard, #relatedVideoCard, [data-e2e='comment-list']")
+        )
+          return;
+        var sel =
+          dy < 0
+            ? '[data-e2e="video-switch-next-arrow"]'
+            : '[data-e2e="video-switch-prev-arrow"]';
+        var arrow = document.querySelector(sel);
+        if (arrow) arrow.click();
+      },
+      { passive: true }
+    );
   }
 
   function sameTab() {
