@@ -68,7 +68,7 @@
   function syncPage() {
     var path = location.pathname || "/";
     var search = location.search || "";
-    var modal = /(?:\?|&)modal_id=/.test(search);
+    var modal = /(?:\?|&)modal_id=/.test(search) || /[?&#]modal_id=/.test(location.href);
     var recommend =
       (path === "/" && /(?:\?|&)recommend=1/.test(search)) || !!document.getElementById("slidelist");
     var jingxuan = path.indexOf("/jingxuan") === 0 && !modal;
@@ -88,25 +88,29 @@
       applyStyle();
       syncPage();
     } else {
-      document.documentElement.classList.remove("pcwtm-open", "pcwtm-searching");
+      document.documentElement.classList.remove("pcwtm-open", "pcwtm-searching", "pcwtm-comments");
     }
     return on;
   }
 
-  var COMMENT_OPEN =
-    "#relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list']";
   var HOST_CLOSE_CLASS = "pcwtm-host-close";
 
-  function commentPanel() {
-    var ids = ["videoSideCard", "videoSideBar"];
-    var i;
-    for (i = 0; i < ids.length; i++) {
-      var el = document.getElementById(ids[i]);
-      if (!el || !el.querySelector(COMMENT_OPEN)) continue;
-      var r = el.getBoundingClientRect();
-      if (r.width > 80 && r.height > 80) return el;
-    }
-    return null;
+  /* Live: official close sets #videoSideCard/#videoSideBar width to 0 but
+   * leaves #relatedVideoCard and [data-e2e=comment-list] in the DOM.
+   * Peek without our sheet class so offsetWidth is the host's, not ours. */
+  function officialCommentPanel() {
+    var root = document.documentElement;
+    var held = root.classList.contains("pcwtm-comments");
+    if (held) root.classList.remove("pcwtm-comments");
+    var card = document.getElementById("videoSideCard");
+    var bar = document.getElementById("videoSideBar");
+    var cw = card ? card.offsetWidth : 0;
+    var bw = bar ? bar.offsetWidth : 0;
+    var panel = null;
+    if (cw >= bw && cw > 48) panel = card;
+    else if (bw > 48) panel = bar;
+    if (held) root.classList.add("pcwtm-comments");
+    return panel;
   }
 
   function findOfficialClose(panel) {
@@ -141,11 +145,34 @@
     return best;
   }
 
+  function findRailCommentChip() {
+    var icon = document.querySelector("[data-e2e='feed-comment-icon']");
+    if (!icon) return null;
+    var scope = icon.parentElement && icon.parentElement.parentElement;
+    if (!scope) scope = document.body;
+    var nodes = scope.querySelectorAll("button, [role='button'], div, span");
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (icon.contains(el) || el.contains(icon)) continue;
+      var t = (el.textContent || "").replace(/\s+/g, "");
+      if (!/^评论/.test(t) || t.length > 8) continue;
+      if (el.children && el.children.length > 4) continue;
+      return el;
+    }
+    return null;
+  }
+
   function markOfficialClose(panel) {
     var close = findOfficialClose(panel);
-    var prev = document.querySelector("." + HOST_CLOSE_CLASS);
-    if (prev && prev !== close) prev.classList.remove(HOST_CLOSE_CLASS);
+    var chip = findRailCommentChip();
+    var marked = document.querySelectorAll("." + HOST_CLOSE_CLASS);
+    var i;
+    for (i = 0; i < marked.length; i++) {
+      if (marked[i] !== close && marked[i] !== chip) marked[i].classList.remove(HOST_CLOSE_CLASS);
+    }
     if (close) close.classList.add(HOST_CLOSE_CLASS);
+    if (chip) chip.classList.add(HOST_CLOSE_CLASS);
     return close;
   }
 
@@ -156,7 +183,13 @@
       "click",
       function (e) {
         var t = e.target;
-        if (!t || !t.closest || !t.closest("[data-e2e='feed-comment-icon']")) return;
+        if (!t || !t.closest) return;
+        if (
+          !t.closest(
+            "#videoSideCard, #videoSideBar, [data-e2e='feed-comment-icon'], #sliderVideo, .xgplayer, .positionBox"
+          )
+        )
+          return;
         setTimeout(syncCommentSheet, 50);
         setTimeout(syncCommentSheet, 250);
       },
@@ -216,8 +249,20 @@
   }
 
   function syncCommentSheet() {
-    var panel = commentPanel();
-    if (!panel) return;
+    var panel = officialCommentPanel();
+    document.documentElement.classList.toggle("pcwtm-comments", !!panel);
+    if (!panel) {
+      var leftover = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
+      var i;
+      for (i = 0; i < leftover.length; i++) {
+        leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+      }
+      return;
+    }
+    ["videoSideCard", "videoSideBar"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.classList.toggle("pcwtm-sheet-panel", el === panel);
+    });
     markOfficialClose(panel);
     markSheetTabs(panel);
     hideSheetPromos(panel);
@@ -540,7 +585,12 @@
       var el = document.getElementById(id);
       if (!el || observedRoots.indexOf(el) !== -1) return;
       var obs = new MutationObserver(schedule);
-      obs.observe(el, { childList: true });
+      var opts = { childList: true };
+      if (id === "videoSideCard" || id === "videoSideBar") {
+        opts.attributes = true;
+        opts.attributeFilter = ["style", "class"];
+      }
+      obs.observe(el, opts);
       rootObservers.push(obs);
       observedRoots.push(el);
     });

@@ -20,7 +20,10 @@
  *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar
  * Hashed class names (e.g. .eRu21rp0) are avoided — they rotate.
  * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.
- * JS may mark the official comment-panel X with .pcwtm-host-close (host node only).
+ * JS adds html.pcwtm-comments only when #videoSideCard / #videoSideBar official
+ * width is > 0 (live: closed=0, open≈391). :has(comment-list) stays true after
+ * official close — do not use it as the open signal.
+ * JS may mark the official close node with .pcwtm-host-close (host node only).
  */
 
 html.pcwtm {
@@ -114,24 +117,16 @@ html.pcwtm #douyin-header {
 }
 
 html.pcwtm.pcwtm-recommend #douyin-header,
-html.pcwtm.pcwtm-modal #douyin-header {
+html.pcwtm.pcwtm-modal #douyin-header,
+html.pcwtm.pcwtm-comments #douyin-header {
   display: none !important;
   content-visibility: hidden;
 }
 
-html.pcwtm.pcwtm-recommend.pcwtm-searching #douyin-header,
-html.pcwtm.pcwtm-modal.pcwtm-searching #douyin-header {
+html.pcwtm.pcwtm-recommend.pcwtm-searching:not(.pcwtm-comments) #douyin-header,
+html.pcwtm.pcwtm-modal.pcwtm-searching:not(.pcwtm-comments) #douyin-header {
   display: flex !important;
   content-visibility: visible;
-}
-
-/* Open comment sheet: leftover PC header (search + Login) goes away. Search stays in the drawer. */
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) #douyin-header,
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) #douyin-header,
-html.pcwtm:has(#videoSideCard:has(#relatedVideoCard)) #douyin-header,
-html.pcwtm:has(#videoSideBar:has(#relatedVideoCard)) #douyin-header {
-  display: none !important;
-  content-visibility: hidden;
 }
 
 html.pcwtm #douyin-header > div,
@@ -399,16 +394,11 @@ html.pcwtm .xgplayer-playswitch {
   left: auto !important;
 }
 
-/* Comments / related card: bottom sheet only when the official panel is open.
- * Chrome QA (v0.2.0, modal_id player): :has() already tracks open/close.
- * Stuck close was a tiny/offset official X (overflow+radius clipped the
- * top-right hit box) and a 72% sheet covering .positionBox. */
-html.pcwtm #videoSideCard:has(#relatedVideoCard),
-html.pcwtm #videoSideCard:has(#merge-all-comment-container),
-html.pcwtm #videoSideCard:has([data-e2e="comment-list"]),
-html.pcwtm #videoSideBar:has(#relatedVideoCard),
-html.pcwtm #videoSideBar:has(#merge-all-comment-container),
-html.pcwtm #videoSideBar:has([data-e2e="comment-list"]) {
+/* Bottom sheet only while html.pcwtm-comments (official side width > 0).
+ * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay
+ * in the DOM at width 0. :has() would keep this block applied. */
+html.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,
+html.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel {
   position: fixed !important;
   left: 0 !important;
   right: 0 !important;
@@ -429,37 +419,31 @@ html.pcwtm #videoSideBar:has([data-e2e="comment-list"]) {
   pointer-events: auto;
 }
 
-/* Sheet open: hide leftover like/fav/share. Keep the official comment icon as toggle. */
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .positionBox [data-e2e="video-player-digg"],
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .positionBox [data-e2e="video-player-collect"],
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .positionBox [data-e2e="video-player-share"],
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .positionBox [data-e2e="video-player-digg"],
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .positionBox [data-e2e="video-player-collect"],
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .positionBox [data-e2e="video-player-share"] {
+/* Rail stays above the shorter sheet. Do not pointer-events:none the box
+ * (that swallowed icon / 「评论 ⓧ」 taps). Hide like/fav/share only. */
+html.pcwtm.pcwtm-comments .positionBox [data-e2e="video-player-digg"],
+html.pcwtm.pcwtm-comments .positionBox [data-e2e="video-player-collect"],
+html.pcwtm.pcwtm-comments .positionBox [data-e2e="video-player-share"] {
   visibility: hidden !important;
 }
 
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .positionBox,
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .positionBox {
+html.pcwtm.pcwtm-comments .positionBox {
   bottom: calc(var(--pcwtm-sheet) + 8px) !important;
   z-index: 10050;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .positionBox [data-e2e="feed-comment-icon"],
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .positionBox [data-e2e="feed-comment-icon"] {
+html.pcwtm.pcwtm-comments .positionBox [data-e2e="feed-comment-icon"] {
   visibility: visible !important;
   pointer-events: auto !important;
 }
 
-html.pcwtm:has(#videoSideCard:has(#relatedVideoCard, #merge-all-comment-container, [data-e2e="comment-list"])) .xgplayer-playswitch,
-html.pcwtm:has(#videoSideBar:has(#relatedVideoCard, #merge-all-comment-container, [data-e2e="comment-list"])) .xgplayer-playswitch {
+html.pcwtm.pcwtm-comments .xgplayer-playswitch {
   visibility: hidden !important;
 }
 
 /* Hamburger is not the comment close — park it top-left while the sheet is open */
-html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) #pcwtm-menu-btn.pcwtm-float,
-html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) #pcwtm-menu-btn.pcwtm-float {
+html.pcwtm.pcwtm-comments #pcwtm-menu-btn.pcwtm-float {
   right: auto;
   left: calc(8px + env(safe-area-inset-left));
   top: calc(8px + env(safe-area-inset-top));
@@ -493,11 +477,11 @@ html.pcwtm .pcwtm-host-close svg {
 }
 
 /* Official sheet tabs: one 44px row, no wrap, no chips. Same sheet bg. */
-html.pcwtm #videoSideCard [role="tablist"],
-html.pcwtm #videoSideBar [role="tablist"],
-html.pcwtm #videoSideCard .semi-tabs-bar,
-html.pcwtm #videoSideBar .semi-tabs-bar,
-html.pcwtm .pcwtm-sheet-tabs {
+html.pcwtm.pcwtm-comments #videoSideCard [role="tablist"],
+html.pcwtm.pcwtm-comments #videoSideBar [role="tablist"],
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs {
   display: flex !important;
   flex-wrap: nowrap !important;
   align-items: stretch !important;
@@ -516,19 +500,19 @@ html.pcwtm .pcwtm-sheet-tabs {
   box-sizing: border-box !important;
 }
 
-html.pcwtm #videoSideCard [role="tablist"]::-webkit-scrollbar,
-html.pcwtm #videoSideBar [role="tablist"]::-webkit-scrollbar,
-html.pcwtm #videoSideCard .semi-tabs-bar::-webkit-scrollbar,
-html.pcwtm #videoSideBar .semi-tabs-bar::-webkit-scrollbar,
-html.pcwtm .pcwtm-sheet-tabs::-webkit-scrollbar {
+html.pcwtm.pcwtm-comments #videoSideCard [role="tablist"]::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments #videoSideBar [role="tablist"]::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs::-webkit-scrollbar {
   display: none;
 }
 
-html.pcwtm #videoSideCard [role="tab"],
-html.pcwtm #videoSideBar [role="tab"],
-html.pcwtm #videoSideCard .semi-tabs-tab,
-html.pcwtm #videoSideBar .semi-tabs-tab,
-html.pcwtm .pcwtm-sheet-tabs > *:not(.semi-tabs-ink-bar) {
+html.pcwtm.pcwtm-comments #videoSideCard [role="tab"],
+html.pcwtm.pcwtm-comments #videoSideBar [role="tab"],
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > *:not(.semi-tabs-ink-bar) {
   flex: 0 0 auto !important;
   height: 44px !important;
   line-height: 44px !important;
@@ -540,37 +524,37 @@ html.pcwtm .pcwtm-sheet-tabs > *:not(.semi-tabs-ink-bar) {
   border-radius: 0 !important;
 }
 
-html.pcwtm #videoSideCard [role="tab"][aria-selected="true"],
-html.pcwtm #videoSideBar [role="tab"][aria-selected="true"],
-html.pcwtm #videoSideCard .semi-tabs-tab-active,
-html.pcwtm #videoSideBar .semi-tabs-tab-active,
-html.pcwtm .pcwtm-sheet-tabs > [aria-selected="true"] {
+html.pcwtm.pcwtm-comments #videoSideCard [role="tab"][aria-selected="true"],
+html.pcwtm.pcwtm-comments #videoSideBar [role="tab"][aria-selected="true"],
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab-active,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab-active,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > [aria-selected="true"] {
   color: var(--pcwtm-fg) !important;
 }
 
-html.pcwtm #videoSideCard .semi-tabs-ink-bar,
-html.pcwtm #videoSideBar .semi-tabs-ink-bar {
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-ink-bar,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-ink-bar {
   background: var(--pcwtm-accent) !important;
 }
 
-html.pcwtm #videoSideCard .semi-tabs,
-html.pcwtm #videoSideBar .semi-tabs,
-html.pcwtm #relatedVideoCard {
+html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs,
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs,
+html.pcwtm.pcwtm-comments #relatedVideoCard {
   background: var(--pcwtm-elevated) !important;
 }
 
-html.pcwtm #relatedVideoCard,
-html.pcwtm #merge-all-comment-container,
-html.pcwtm .comment-mainContent[data-e2e="comment-list"],
-html.pcwtm [data-e2e="comment-list"] {
+html.pcwtm.pcwtm-comments #relatedVideoCard,
+html.pcwtm.pcwtm-comments #merge-all-comment-container,
+html.pcwtm.pcwtm-comments .comment-mainContent[data-e2e="comment-list"],
+html.pcwtm.pcwtm-comments [data-e2e="comment-list"] {
   width: 100% !important;
   max-width: 100% !important;
 }
 
-html.pcwtm #videoSideCard #merge-all-comment-container,
-html.pcwtm #videoSideBar #merge-all-comment-container,
-html.pcwtm #videoSideCard [data-e2e="comment-list"],
-html.pcwtm #videoSideBar [data-e2e="comment-list"] {
+html.pcwtm.pcwtm-comments #videoSideCard #merge-all-comment-container,
+html.pcwtm.pcwtm-comments #videoSideBar #merge-all-comment-container,
+html.pcwtm.pcwtm-comments #videoSideCard [data-e2e="comment-list"],
+html.pcwtm.pcwtm-comments #videoSideBar [data-e2e="comment-list"] {
   max-height: calc(var(--pcwtm-sheet) - 44px);
   overflow-x: hidden;
   overflow-y: auto;
