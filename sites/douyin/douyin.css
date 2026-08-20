@@ -446,12 +446,12 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
   background: var(--pcwtm-elevated) !important;
   border-top: 1px solid var(--pcwtm-border);
   border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */
-  z-index: 10040 !important;
-  overflow: visible !important;
+  z-index: 10055 !important;
+  overflow: hidden !important;
   overscroll-behavior: contain;
   padding: 0 0 env(safe-area-inset-bottom);
   box-sizing: border-box !important;
-  pointer-events: auto;
+  pointer-events: auto !important;
 }
 
 /* Rail stays above the shorter sheet. Do not pointer-events:none the box
@@ -464,7 +464,7 @@ html.pcwtm.pcwtm-comments .positionBox [data-e2e="video-player-share"] {
 
 html.pcwtm.pcwtm-comments .positionBox {
   bottom: calc(var(--pcwtm-sheet) + 8px) !important;
-  z-index: 10050;
+  z-index: 10035;
   pointer-events: auto;
 }
 
@@ -607,10 +607,27 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-list"] {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  pointer-events: auto !important;
 }
 
 html.pcwtm [data-e2e="comment-item"] {
   max-width: 100% !important;
+}
+
+/* Live 2026-08-20: leftover login-full-panel host is h=0 / y=vh but its
+ * position:fixed child still covers the sheet (z 9999) and eats
+ * comment-item / video-comment-more. Keep official login JS; only ignore
+ * pointers on that empty host. Visible #login-panel-new stays above. */
+html.pcwtm [id^="login-full-panel-"]:not(:has(#login-panel-new)),
+html.pcwtm [id^="login-full-panel-"]:not(:has(#login-panel-new)) * {
+  pointer-events: none !important;
+}
+
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-item"],
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="video-comment-more"] {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1;
 }
 
 /* ---------- Video detail /video/:id ---------- */
@@ -824,6 +841,7 @@ html.pcwtm #login-panel-new,
 html.pcwtm #douyin-login-new-id {
   overflow-x: hidden;
   z-index: 10120;
+  pointer-events: auto;
 }
 
 /* Inner desktop two-column (QA: 726) is the overflow. Stack / drop QR. */
