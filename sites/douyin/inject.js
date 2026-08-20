@@ -35,6 +35,10 @@
   var historyPatched = false;
   var leaveBound = false;
   var navBound = false;
+  var rawPushState = null;
+  var detailTrapLive = false;
+  var detailTrapFor = "";
+  var detailTrapPushes = 0;
 
   function store(key, value) {
     try {
@@ -103,6 +107,27 @@
     return (path || location.pathname || "").indexOf("/video/") === 0;
   }
 
+  /* 0.2.5 wrote ON_VIDEO_KEY only when location.pathname was already
+   * /video/… (IIFE + apply-if-mobile). Cold open often hydrates from
+   * / or /jingxuan first; the feed→detail SPA is the case that looked
+   * like it “worked”. Treat any detail document as from-detail. */
+  function isJingxuanGrid() {
+    if (/精选电脑版/.test(document.title || "")) return true;
+    return !!document.querySelector(
+      ".jingxuan-scroll-element, .jingxuanFeedList, .discover-tab-bar, .discover-tab-container"
+    );
+  }
+
+  function isDetailPage() {
+    if (isVideoPath()) return true;
+    if (isJingxuanGrid()) return false;
+    try {
+      return !!document.querySelector('[data-e2e="video-detail"]');
+    } catch (e) {
+      return false;
+    }
+  }
+
   /* Live SSR: logo / 精选 are //www.douyin.com/jingxuan, not history.back().
    * Official 返回 on /video/:id uses the same kind of leave (href or
    * location = jingxuan / / / jingxuan.douyin.com / app protocol). */
@@ -127,7 +152,7 @@
   function shouldHijackLeave(href) {
     if (load(STAY_JX_KEY) === "1") return false;
     if (!wantMobile() && rememberPcwtm() !== "1") return false;
-    if (!isVideoPath() && !cameFromVideo()) return false;
+    if (!isDetailPage() && !cameFromVideo()) return false;
     return isDumpDest(href);
   }
 
@@ -157,13 +182,7 @@
     if (path.indexOf("/jingxuan") === 0) return true;
     if (/(?:\?|&)modal_id=/.test(search)) return true;
     if ((path === "/" || path === "") && !/(?:\?|&)recommend=1/.test(search)) return true;
-    if (/精选电脑版/.test(document.title || "")) return true;
-    if (
-      document.querySelector(
-        ".jingxuan-scroll-element, .jingxuanFeedList, .discover-tab-bar, .discover-tab-container"
-      )
-    )
-      return true;
+    if (isJingxuanGrid()) return true;
     return false;
   }
 
@@ -222,10 +241,14 @@
     else location.assign(href);
   }
 
-  /* Cold /video/:id + browser Back: write the mark at document-start and
-   * again on pagehide. Recover must not wait for apply() / wantMobile(). */
+  /* Any /video/:id load (cold open included) counts as from-detail.
+   * Write at document-start, on detail DOM, and again on pagehide so
+   * browser Back to the previous /jingxuan entry can recycle. */
   function persistVideoMark() {
-    if (!isVideoPath()) return;
+    if (!isDetailPage()) return;
+    try {
+      window.__pcwtmFromDetail = true;
+    } catch (e) {}
     store(STAY_JX_KEY, null);
     store(ON_VIDEO_KEY, "1");
     store(LAST_KIND_KEY, "video");
@@ -244,16 +267,24 @@
   }
 
   function clearVideoMark() {
+    try {
+      window.__pcwtmFromDetail = false;
+    } catch (e) {}
     store(ON_VIDEO_KEY, null);
     store(RECOVER_N_KEY, null);
     if (load(LAST_KIND_KEY) === "video") store(LAST_KIND_KEY, "recommend");
   }
 
   function allowJingxuanNav() {
+    try {
+      window.__pcwtmFromDetail = false;
+    } catch (e) {}
     store(ON_VIDEO_KEY, null);
     store(RECOVER_N_KEY, null);
     store(LAST_KIND_KEY, "jingxuan");
     store(STAY_JX_KEY, "1");
+    detailTrapLive = false;
+    detailTrapFor = "";
   }
 
   function referrerWasVideo() {
@@ -269,6 +300,9 @@
 
   function cameFromVideo() {
     if (load(STAY_JX_KEY) === "1") return false;
+    try {
+      if (window.__pcwtmFromDetail) return true;
+    } catch (e) {}
     if (load(ON_VIDEO_KEY) === "1") return true;
     if (load(LAST_KIND_KEY) === "video") return true;
     return referrerWasVideo();
@@ -286,7 +320,7 @@
   function recoverVideoBack() {
     if (load(STAY_JX_KEY) === "1") return false;
     if (!wantMobile() && rememberPcwtm() !== "1") return false;
-    if (isVideoPath()) {
+    if (isDetailPage()) {
       persistVideoMark();
       return false;
     }
@@ -316,16 +350,42 @@
     } catch (e) {}
   }
 
+  function armDetailBackTrap() {
+    if (load(STAY_JX_KEY) === "1") return;
+    if (!wantMobile() && rememberPcwtm() !== "1") return;
+    if (!isVideoPath()) return;
+    if (!rawPushState) return;
+    if (detailTrapFor !== location.pathname) {
+      detailTrapFor = "";
+      detailTrapPushes = 0;
+      detailTrapLive = false;
+    }
+    if (history.state && history.state.pcwtmFromDetail) {
+      detailTrapLive = true;
+      detailTrapFor = location.pathname;
+      return;
+    }
+    if (detailTrapPushes >= 2) return;
+    try {
+      rawPushState.call(history, { pcwtmFromDetail: location.pathname }, "", location.href);
+      detailTrapLive = true;
+      detailTrapFor = location.pathname;
+      detailTrapPushes += 1;
+    } catch (e) {}
+  }
+
   function patchHistory() {
     if (historyPatched) return;
     historyPatched = true;
     var push = history.pushState;
     var replace = history.replaceState;
+    rawPushState = push;
     history.pushState = function (state, title, url) {
       if (url != null && shouldHijackLeave(url)) url = recommendHref();
       var ret = push.call(this, state, title, url == null ? url : decorateHref(url));
       setTimeout(recoverVideoBack, 0);
       setTimeout(recoverVideoBack, 300);
+      if (isVideoPath()) setTimeout(armDetailBackTrap, 0);
       return ret;
     };
     history.replaceState = function (state, title, url) {
@@ -333,6 +393,10 @@
       var ret = replace.call(this, state, title, url == null ? url : decorateHref(url));
       setTimeout(recoverVideoBack, 0);
       setTimeout(recoverVideoBack, 300);
+      if (isVideoPath() && !(history.state && history.state.pcwtmFromDetail)) {
+        detailTrapLive = false;
+        setTimeout(armDetailBackTrap, 0);
+      }
       return ret;
     };
     try {
@@ -400,7 +464,7 @@
     root.classList.toggle("pcwtm-jingxuan", jingxuan);
     root.classList.toggle("pcwtm-video", video);
     root.classList.toggle("pcwtm-modal", modal);
-    if (video) rememberVideoPage();
+    if (video || isDetailPage()) rememberVideoPage();
   }
 
   function syncMode() {
@@ -888,6 +952,7 @@
   }
 
   function apply() {
+    persistVideoMark();
     if (recoverVideoBack()) return;
     var on = syncMode();
     if (on) {
@@ -896,6 +961,7 @@
       syncCommentSheet();
       rememberVideoPage();
       retargetOfficialVideoBack();
+      armDetailBackTrap();
     } else {
       stopWatch();
     }
@@ -935,8 +1001,16 @@
     setTimeout(schedule, 400);
   }
 
-  function onPopState() {
+  function onPopState(e) {
     persistVideoMark();
+    if (load(STAY_JX_KEY) !== "1" && detailTrapLive && isVideoPath()) {
+      var st = e && e.state;
+      if (!st || !st.pcwtmFromDetail) {
+        detailTrapLive = false;
+        goRecommend(true);
+        return;
+      }
+    }
     setTimeout(function () {
       if (!recoverVideoBack()) onNavigate();
     }, 0);
@@ -959,7 +1033,7 @@
         return;
       }
       if (!dest) return;
-      if (!isVideoPath() && !cameFromVideo()) return;
+      if (!isDetailPage() && !cameFromVideo()) return;
       if (!isDumpDest(dest)) return;
       persistVideoMark();
       if (!e.canIntercept) {
