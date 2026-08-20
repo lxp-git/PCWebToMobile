@@ -24,6 +24,8 @@
  * width is > 0 (live: closed=0, open≈391). :has(comment-list) stays true after
  * official close — do not use it as the open signal.
  * JS may mark the official close node with .pcwtm-host-close (host node only).
+ * Recommend door is /?recommend=1&from_nav=1 (bare ?recommend=1 bounces to jingxuan).
+ * Login wall hooks: #login-panel-new #douyin-login-new-id #douyin_login_comp_single_panel.
  */
 
 html.pcwtm {
@@ -743,9 +745,12 @@ html.pcwtm [role="dialog"],
 html.pcwtm .semi-modal,
 html.pcwtm #login-panel-new,
 html.pcwtm #login-pannel,
+html.pcwtm #douyin-login-new-id,
+html.pcwtm #douyin_login_comp_single_panel,
 html.pcwtm [data-e2e="recommend-guide-mask"],
 html.pcwtm #douyin-web-recommend-guide-mask {
   max-width: 100vw !important;
+  min-width: 0 !important;
 }
 
 /* ---------- Search / profile: global min-width only ---------- */

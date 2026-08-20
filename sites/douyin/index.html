@@ -65,12 +65,12 @@
 <body>
   <h1>抖音 · 手机 UI</h1>
   <p>PC 站的功能，手机的布局。CSS 改样式，不抓内容。</p>
-  <p class="muted"><strong>v0.2.2</strong>：评论抽屉跟官网自己的开关（侧栏宽度），关掉后不再用 CSS 钉住。点赞 / 评论 / 收藏仍是官网控件。搜索 / 直播 / 主页 / 电商 / 消息仍走官网自己的页，只有去 min-width。</p>
+  <p class="muted"><strong>v0.2.3</strong>：菜单「推荐 / For You」走 <code>/?recommend=1&amp;from_nav=1</code> 并带上 <code>pcwtm</code>。详情页后退回到推荐竖滑，不落到精选弹层。评论抽屉仍跟官网侧栏宽度；关掉后还能滑。点赞 / 评论 / 收藏仍是官网控件。</p>
   <a class="dl" href="douyin.user.js" download="douyin.user.js">下载脚本</a>
   <ol>
     <li>点上面按钮，把脚本全文复制到 iOS <strong>Alook</strong> → 脚本，启用。已装过旧版的请删掉再贴一次。</li>
     <li>用 Alook 打开 <code>www.douyin.com</code> 的<strong>桌面版</strong>（不要进 <code>m.douyin.com</code>）。</li>
-    <li>未登录时官网常先落到精选网格；要上下滑请点菜单里的「推荐」，或打开 <code>www.douyin.com/?recommend=1</code>。</li>
+    <li>未登录时官网常先落到精选网格；要上下滑请点菜单里的「推荐」，或打开 <code>www.douyin.com/?recommend=1&amp;from_nav=1&amp;pcwtm=1</code>。</li>
   </ol>
   <footer>
     <a href="../../">回目录</a> · <a href="https://github.com/lxp-git/PCWebToMobile/issues/new?template=wish.yml">许愿别的站</a>

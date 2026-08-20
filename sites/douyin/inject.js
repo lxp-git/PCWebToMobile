@@ -9,11 +9,15 @@
   var STYLE_ID = "pcwtm-douyin-css";
   var WIDTH_MAX = 920;
   var WATCH_MS = 2000;
+  var PCWTM_KEY = "pcwtm";
+  var ON_VIDEO_KEY = "pcwtm-on-video";
+  var RECOMMEND_HREF = "https://www.douyin.com/?recommend=1&from_nav=1";
 
   // Official PC destinations we keep reachable if the live nav omitted them.
   // Shop is not listed here — only collected when the official nav has it.
+  // 推荐 uses from_nav=1: bare ?recommend=1 often SPA-bounces to /jingxuan?modal_id=.
   var FALLBACK_LINKS = [
-    { href: "https://www.douyin.com/?recommend=1", text: "推荐" },
+    { href: RECOMMEND_HREF, text: "推荐" },
     { href: "https://www.douyin.com/jingxuan", text: "精选" },
     { href: "https://www.douyin.com/follow", text: "关注" },
     { href: "https://live.douyin.com/", text: "直播" },
@@ -25,18 +29,176 @@
   var intervalId = 0;
   var rootObservers = [];
   var observedRoots = [];
+  var historyPatched = false;
+
+  function store(key, value) {
+    try {
+      if (value == null) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, value);
+    } catch (e) {}
+  }
+
+  function load(key) {
+    try {
+      return sessionStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function queryPcwtm() {
+    try {
+      return new URLSearchParams(location.search).get(PCWTM_KEY);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function rememberPcwtm() {
+    var q = queryPcwtm();
+    if (q === "1" || q === "0") store(PCWTM_KEY, q);
+    return q === "1" || q === "0" ? q : load(PCWTM_KEY);
+  }
 
   function wantMobile() {
-    try {
-      var q = new URLSearchParams(location.search);
-      if (q.get("pcwtm") === "0") return false;
-      if (q.get("pcwtm") === "1") return true;
-    } catch (e) {}
+    var flag = rememberPcwtm();
+    if (flag === "0") return false;
+    if (flag === "1") return true;
     if (/Android|iPhone|iPod|Mobile|webOS/i.test(navigator.userAgent)) return true;
     if (window.innerWidth <= WIDTH_MAX) return true;
     if (navigator.maxTouchPoints > 0 && Math.min(screen.width, screen.height) <= WIDTH_MAX)
       return true;
     return false;
+  }
+
+  function isWwwDouyin(u) {
+    return u && /(^|\.)douyin\.com$/.test(u.hostname) && u.hostname.indexOf("live.") !== 0;
+  }
+
+  function isRecommendLabel(text) {
+    return /^(推荐|For You|Recommend)$/i.test((text || "").replace(/\s+/g, " ").trim());
+  }
+
+  function isRecommendUrl(u) {
+    if (!u) return false;
+    var path = u.pathname.replace(/\/+$/, "") || "/";
+    return path === "/" && u.searchParams.get("recommend") === "1";
+  }
+
+  function isVideoPath(path) {
+    return (path || location.pathname || "").indexOf("/video/") === 0;
+  }
+
+  function isJingxuanDump() {
+    var path = location.pathname || "/";
+    var search = location.search || "";
+    if (isVideoPath(path)) return false;
+    if (isRecommendUrl(new URL(location.href))) return false;
+    if (path.indexOf("/jingxuan") === 0) return true;
+    if (/(?:\?|&)modal_id=/.test(search)) return true;
+    if ((path === "/" || path === "") && !/(?:\?|&)recommend=1/.test(search)) return true;
+    return false;
+  }
+
+  function keepPcwtm(u) {
+    var flag = rememberPcwtm();
+    if ((flag === "1" || flag === "0") && isWwwDouyin(u)) {
+      u.searchParams.set(PCWTM_KEY, flag);
+    }
+  }
+
+  function stabilizeRecommend(u) {
+    if (isRecommendUrl(u) && u.searchParams.get("from_nav") !== "1") {
+      u.searchParams.set("from_nav", "1");
+    }
+  }
+
+  function mutateHref(href, mutator) {
+    if (href == null || href === "") return href;
+    try {
+      var u = new URL(href, location.href);
+      mutator(u);
+      if (/^https?:\/\//i.test(String(href))) return u.href;
+      return u.pathname + u.search + u.hash;
+    } catch (e) {
+      return href;
+    }
+  }
+
+  function decorateHref(href) {
+    return mutateHref(href, function (u) {
+      keepPcwtm(u);
+      stabilizeRecommend(u);
+    });
+  }
+
+  function recommendHref() {
+    return decorateHref(RECOMMEND_HREF);
+  }
+
+  function samePlace(href) {
+    try {
+      var u = new URL(href, location.href);
+      return u.pathname === location.pathname && u.search === location.search;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function goRecommend(replace) {
+    var href = recommendHref();
+    closeDrawer();
+    if (samePlace(href)) return;
+    if (replace) location.replace(href);
+    else location.assign(href);
+  }
+
+  function rememberVideoPage() {
+    if (isVideoPath()) store(ON_VIDEO_KEY, "1");
+  }
+
+  function clearVideoMark() {
+    store(ON_VIDEO_KEY, null);
+  }
+
+  function recoverVideoBack() {
+    if (load(ON_VIDEO_KEY) !== "1") return false;
+    if (isVideoPath()) return false;
+    if (!isJingxuanDump()) {
+      clearVideoMark();
+      return false;
+    }
+    if (!wantMobile()) {
+      clearVideoMark();
+      return false;
+    }
+    clearVideoMark();
+    goRecommend(true);
+    return true;
+  }
+
+  function rewriteLanding() {
+    try {
+      var flag = rememberPcwtm();
+      var u = new URL(location.href);
+      var before = u.href;
+      if (flag === "1" || flag === "0") u.searchParams.set(PCWTM_KEY, flag);
+      if (wantMobile()) stabilizeRecommend(u);
+      if (u.href !== before) location.replace(u.pathname + u.search + u.hash);
+    } catch (e) {}
+  }
+
+  function patchHistory() {
+    if (historyPatched) return;
+    historyPatched = true;
+    var push = history.pushState;
+    var replace = history.replaceState;
+    history.pushState = function (state, title, url) {
+      return push.call(this, state, title, url == null ? url : decorateHref(url));
+    };
+    history.replaceState = function (state, title, url) {
+      return replace.call(this, state, title, url == null ? url : decorateHref(url));
+    };
   }
 
   function applyViewport() {
@@ -78,6 +240,7 @@
     root.classList.toggle("pcwtm-jingxuan", jingxuan);
     root.classList.toggle("pcwtm-video", video);
     root.classList.toggle("pcwtm-modal", modal);
+    if (video) rememberVideoPage();
   }
 
   function syncMode() {
@@ -115,10 +278,7 @@
 
   function findOfficialClose(panel) {
     if (!panel) return null;
-    var labeled = panel.querySelector(
-      '[aria-label*="关闭"], [aria-label*="Close"], [aria-label*="close"], [title*="关闭"]'
-    );
-    if (labeled) return labeled;
+    /* Live 2026-08-20: official X has no aria-label / data-e2e. Geometry first. */
     var rect = panel.getBoundingClientRect();
     var nodes = panel.querySelectorAll("button, [role='button'], svg");
     var best = null;
@@ -127,7 +287,7 @@
     for (i = 0; i < nodes.length; i++) {
       var node = nodes[i];
       var r = node.getBoundingClientRect();
-      if (r.width < 1 || r.height < 1) continue;
+      if (r.width < 1 || r.height < 1 || r.width > 48 || r.height > 48) continue;
       if (r.top < rect.top - 8 || r.top > rect.top + 64) continue;
       if (r.right < rect.right - 80) continue;
       var text = (node.textContent || "").replace(/\s+/g, "");
@@ -286,7 +446,7 @@
       var u = new URL(href, location.href);
       var host = u.hostname;
       var p = u.pathname.replace(/\/+$/, "") || "/";
-      if (u.searchParams.get("recommend") === "1") return "recommend";
+      if (isRecommendUrl(u)) return "recommend";
       if (host.indexOf("live.") === 0 || p === "/live") return "live";
       if (p === "/follow") return "follow";
       if (p === "/jingxuan") return "jingxuan";
@@ -322,7 +482,8 @@
       } catch (e) {
         return;
       }
-      if (text === "推荐") href = "https://www.douyin.com/?recommend=1";
+      if (isRecommendLabel(text) || destKey(href) === "recommend") href = recommendHref();
+      else href = decorateHref(href);
       if (seenHref[href]) return;
       var key = destKey(href);
       if (seenDest[key] || seenText[text]) return;
@@ -483,7 +644,16 @@
           runHostAction(act.getAttribute("data-pcwtm-act"));
           return;
         }
-        if (e.target && e.target.closest && e.target.closest("a")) closeDrawer();
+        var a = e.target && e.target.closest ? e.target.closest("a") : null;
+        if (!a || !a.href) return;
+        if (isRecommendLabel(a.textContent) || destKey(a.href) === "recommend") {
+          e.preventDefault();
+          clearVideoMark();
+          goRecommend();
+          return;
+        }
+        clearVideoMark();
+        closeDrawer();
       });
       document.body.appendChild(drawer);
     }
@@ -557,11 +727,13 @@
   }
 
   function apply() {
+    if (recoverVideoBack()) return;
     var on = syncMode();
     if (on) {
       ensureChrome();
       startWatch();
       syncCommentSheet();
+      rememberVideoPage();
     } else {
       stopWatch();
     }
@@ -601,11 +773,56 @@
     setTimeout(schedule, 400);
   }
 
+  function onPopState() {
+    if (recoverVideoBack()) return;
+    onNavigate();
+  }
+
   function onSameOriginClick(e) {
+    if (wantMobile() && isVideoPath()) {
+      var back = e.target && e.target.closest ? e.target.closest("button, [role='button'], a") : null;
+      if (back) {
+        var backLabel = (back.getAttribute("aria-label") || back.getAttribute("title") || "")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (/^(返回|Back)$/i.test(backLabel)) {
+          e.preventDefault();
+          e.stopPropagation();
+          clearVideoMark();
+          goRecommend();
+          return;
+        }
+      }
+    }
     var a = e.target && e.target.closest ? e.target.closest("a") : null;
     if (!a || !a.href) return;
     try {
-      if (new URL(a.href, location.href).origin !== location.origin) return;
+      var u = new URL(a.href, location.href);
+      if (u.origin !== location.origin) return;
+      if (!wantMobile()) {
+        onNavigate();
+        return;
+      }
+      if (isRecommendLabel(labelOf(a)) || destKey(a.href) === "recommend") {
+        e.preventDefault();
+        clearVideoMark();
+        goRecommend();
+        return;
+      }
+      if (a.closest && a.closest("#pcwtm-drawer")) {
+        clearVideoMark();
+        onNavigate();
+        return;
+      }
+      if (isVideoPath() && !isVideoPath(u.pathname)) {
+        var p = u.pathname.replace(/\/+$/, "") || "/";
+        if (p === "/" || p === "/jingxuan") {
+          e.preventDefault();
+          clearVideoMark();
+          goRecommend();
+          return;
+        }
+      }
     } catch (err) {
       return;
     }
@@ -616,8 +833,8 @@
     connectSmallRoots();
     if (watching) return;
     watching = true;
-    window.addEventListener("popstate", onNavigate);
-    document.addEventListener("click", onSameOriginClick);
+    window.addEventListener("popstate", onPopState);
+    document.addEventListener("click", onSameOriginClick, true);
     intervalId = setInterval(function () {
       connectSmallRoots();
       schedule();
@@ -632,17 +849,23 @@
     observedRoots = [];
     if (!watching) return;
     watching = false;
-    window.removeEventListener("popstate", onNavigate);
-    document.removeEventListener("click", onSameOriginClick);
+    window.removeEventListener("popstate", onPopState);
+    document.removeEventListener("click", onSameOriginClick, true);
     if (intervalId) {
       clearInterval(intervalId);
       intervalId = 0;
     }
   }
 
+  patchHistory();
+  rewriteLanding();
   apply();
   sameTab();
   document.addEventListener("DOMContentLoaded", schedule);
+  window.addEventListener("pageshow", function () {
+    if (recoverVideoBack()) return;
+    schedule();
+  });
   window.addEventListener("resize", schedule);
   window.addEventListener("orientationchange", function () {
     setTimeout(schedule, 250);
