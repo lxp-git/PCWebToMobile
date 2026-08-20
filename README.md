@@ -14,7 +14,8 @@
 
 | 站点 | 状态 | 下载 |
 | --- | --- | --- |
-| 哔哩哔哩 `www.bilibili.com` | 首页 + 播放页可用 | [下载页](sites/bilibili/) · [bilibili.user.js](sites/bilibili/bilibili.user.js) |
+| 哔哩哩哩 `www.bilibili.com` | 首页 + 播放页可用 | [下载页](sites/bilibili/) · [bilibili.user.js](sites/bilibili/bilibili.user.js) |
+| 抖音 `www.douyin.com` | 首页上下滑 + 视频详情/评论 | [下载页](sites/douyin/) · [douyin.user.js](sites/douyin/douyin.user.js) |
 
 ### 怎么用（iOS Alook）
 
@@ -28,7 +29,7 @@
 
 其它能装油猴的浏览器（Kiwi / Firefox / Edge Canary + Tampermonkey / Violentmonkey）也可以直接装 `.user.js`。
 
-### 哔哩哔哩 0.1.0
+### 哔哩哩哩 0.1.0
 
 已经能用：
 
@@ -46,6 +47,26 @@ python3 sites/bilibili/build.py
 ```
 
 会重新生成可安装的 `bilibili.user.js`。
+
+### 抖音 0.1.0
+
+已经能用：
+
+- 首页推荐流：去掉左侧导航占位，全屏竖滑当前视频，点赞/评论/收藏仍在右侧
+- 评论：推荐流里点评论会铺成底部抽屉；`/video/` 详情页播放器全宽，评论跟在下面
+- 精选网格收成单列
+- 菜单抽屉仍能进推荐、精选、关注、发现、我的
+- 站内链接尽量同页打开，不新开标签
+
+还没专门做：搜索结果页、直播、个人主页、电商（脚本会挂上，但只有全局去 min-width）。
+
+改样式编 `sites/douyin/douyin.css`，改逻辑编 `sites/douyin/inject.js`，然后：
+
+```bash
+python3 sites/douyin/build.py
+```
+
+会重新生成可安装的 `douyin.user.js`。
 
 ## 原则
 
