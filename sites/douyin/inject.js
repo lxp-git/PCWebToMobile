@@ -93,6 +93,151 @@
     return on;
   }
 
+  var COMMENT_OPEN =
+    "#relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list']";
+  var HOST_CLOSE_CLASS = "pcwtm-host-close";
+  var lastHostCloseAt = 0;
+  var sheetSwipeY = 0;
+  var sheetSwipeX = 0;
+  var sheetSwipeOnHeader = false;
+
+  function commentPanel() {
+    var ids = ["videoSideCard", "videoSideBar"];
+    var i;
+    for (i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (!el || !el.querySelector(COMMENT_OPEN)) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width > 80 && r.height > 80) return el;
+    }
+    return null;
+  }
+
+  function findOfficialClose(panel) {
+    if (!panel) return null;
+    var labeled = panel.querySelector(
+      '[aria-label*="关闭"], [aria-label*="Close"], [aria-label*="close"], [title*="关闭"]'
+    );
+    if (labeled) return labeled;
+    var rect = panel.getBoundingClientRect();
+    var nodes = panel.querySelectorAll("button, [role='button'], svg");
+    var best = null;
+    var bestRight = -1;
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var r = node.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) continue;
+      if (r.top < rect.top - 8 || r.top > rect.top + 64) continue;
+      if (r.right < rect.right - 80) continue;
+      var text = (node.textContent || "").replace(/\s+/g, "");
+      if (text && /详情|评论|视频|合集|Comments|Videos|Albums|音乐/.test(text)) continue;
+      var hit = node;
+      if (node.tagName === "svg") {
+        hit = node.closest("button, [role='button'], a") || node.parentElement;
+      }
+      if (!hit || !panel.contains(hit)) continue;
+      if (r.right > bestRight) {
+        bestRight = r.right;
+        best = hit;
+      }
+    }
+    return best;
+  }
+
+  function markOfficialClose(panel) {
+    var close = findOfficialClose(panel);
+    var prev = document.querySelector("." + HOST_CLOSE_CLASS);
+    if (prev && prev !== close) prev.classList.remove(HOST_CLOSE_CLASS);
+    if (close) close.classList.add(HOST_CLOSE_CLASS);
+    return close;
+  }
+
+  function clickOfficialClose(panel) {
+    var now = Date.now();
+    if (now - lastHostCloseAt < 400) return true;
+    var close = markOfficialClose(panel);
+    if (!close || typeof close.click !== "function") return false;
+    lastHostCloseAt = now;
+    close.click();
+    return true;
+  }
+
+  function onCommentOutside(e) {
+    if (!document.documentElement.classList.contains("pcwtm")) return;
+    var panel = commentPanel();
+    if (!panel) return;
+    var t = e.target;
+    if (!t || !t.closest) return;
+    if (
+      t.closest(
+        "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list']"
+      )
+    )
+      return;
+    if (
+      t.closest(
+        "[data-e2e='feed-comment-icon'], [data-e2e='video-player-digg'], [data-e2e='video-player-collect'], [data-e2e='video-player-share']"
+      )
+    )
+      return;
+    if (t.closest("#pcwtm-menu-btn, #pcwtm-drawer, #pcwtm-mask")) return;
+    if (t.closest('[role="dialog"], .semi-modal, #login-panel-new, #login-pannel')) return;
+    if (e.cancelable) e.preventDefault();
+    e.stopPropagation();
+    clickOfficialClose(panel);
+  }
+
+  function onSheetTouchStart(e) {
+    sheetSwipeOnHeader = false;
+    var panel = commentPanel();
+    if (!panel || !e.touches || !e.touches[0]) return;
+    var t = e.target;
+    if (!t || !t.closest || !t.closest("#videoSideCard, #videoSideBar")) return;
+    if (t.closest("[data-e2e='comment-list'], #merge-all-comment-container")) return;
+    var y = e.touches[0].clientY;
+    var r = panel.getBoundingClientRect();
+    if (y > r.top + 56) return;
+    sheetSwipeOnHeader = true;
+    sheetSwipeY = y;
+    sheetSwipeX = e.touches[0].clientX;
+  }
+
+  function onSheetTouchEnd(e) {
+    if (!sheetSwipeOnHeader) return;
+    sheetSwipeOnHeader = false;
+    var panel = commentPanel();
+    if (!panel || !e.changedTouches || !e.changedTouches[0]) return;
+    var dy = e.changedTouches[0].clientY - sheetSwipeY;
+    var dx = e.changedTouches[0].clientX - sheetSwipeX;
+    if (dy < 60 || dy < Math.abs(dx) * 1.2) return;
+    clickOfficialClose(panel);
+  }
+
+  function bindCommentClose() {
+    if (document.documentElement.getAttribute("data-pcwtm-cmt") === "1") return;
+    document.documentElement.setAttribute("data-pcwtm-cmt", "1");
+    document.addEventListener("pointerdown", onCommentOutside, true);
+    document.addEventListener("click", onCommentOutside, true);
+    document.addEventListener("touchstart", onSheetTouchStart, { passive: true, capture: true });
+    document.addEventListener("touchend", onSheetTouchEnd, { passive: true, capture: true });
+    document.addEventListener(
+      "click",
+      function (e) {
+        var t = e.target;
+        if (!t || !t.closest || !t.closest("[data-e2e='feed-comment-icon']")) return;
+        setTimeout(syncCommentClose, 50);
+        setTimeout(syncCommentClose, 250);
+      },
+      true
+    );
+  }
+
+  function syncCommentClose() {
+    var panel = commentPanel();
+    if (panel) markOfficialClose(panel);
+  }
+
   function closeDrawer() {
     document.documentElement.classList.remove("pcwtm-open");
   }
@@ -269,6 +414,8 @@
     var drawer = document.getElementById("pcwtm-drawer");
     if (btn && mask && drawer) {
       bindFeedSwipe();
+      bindCommentClose();
+      syncCommentClose();
       return;
     }
 
@@ -312,6 +459,8 @@
     }
 
     bindFeedSwipe();
+    bindCommentClose();
+    syncCommentClose();
   }
 
   function bindFeedSwipe() {
@@ -339,7 +488,9 @@
         if (
           e.target &&
           e.target.closest &&
-          e.target.closest("#videoSideCard, #relatedVideoCard, [data-e2e='comment-list']")
+          e.target.closest(
+            "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list']"
+          )
         )
           return;
         var sel =
@@ -380,6 +531,7 @@
     if (on) {
       ensureChrome();
       startWatch();
+      syncCommentClose();
     } else {
       stopWatch();
     }
@@ -399,7 +551,7 @@
     }
     observedRoots = live;
     rootObservers = nextObs;
-    ["slidelist", "douyin-header"].forEach(function (id) {
+    ["slidelist", "douyin-header", "videoSideCard", "videoSideBar"].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el || observedRoots.indexOf(el) !== -1) return;
       var obs = new MutationObserver(schedule);
