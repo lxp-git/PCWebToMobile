@@ -614,13 +614,23 @@ html.pcwtm [data-e2e="comment-item"] {
   max-width: 100% !important;
 }
 
-/* Live 2026-08-20: leftover login-full-panel host is h=0 / y=vh but its
- * position:fixed child still covers the sheet (z 9999) and eats
- * comment-item / video-comment-more. Keep official login JS; only ignore
- * pointers on that empty host. Visible #login-panel-new stays above. */
-html.pcwtm [id^="login-full-panel-"]:not(:has(#login-panel-new)),
-html.pcwtm [id^="login-full-panel-"]:not(:has(#login-panel-new)) * {
+/* Live 2026-08-20: #login-full-panel-* host is h=0 but its direct
+ * position:fixed child covers the sheet and eats comment-item /
+ * video-comment-more. Do not use :has(#login-panel-new) — that node
+ * lives inside the same host. Keep official login JS; punch through
+ * the dimmer and re-enable the real card. */
+html.pcwtm [id^="login-full-panel-"],
+html.pcwtm [id^="login-full-panel-"] > * {
   pointer-events: none !important;
+}
+
+html.pcwtm [id^="login-full-panel-"] #login-panel-new,
+html.pcwtm [id^="login-full-panel-"] #login-panel-new *,
+html.pcwtm [id^="login-full-panel-"] #douyin-login-new-id,
+html.pcwtm [id^="login-full-panel-"] #douyin-login-new-id *,
+html.pcwtm [id^="login-full-panel-"] article#douyin_login_comp_flat_panel,
+html.pcwtm [id^="login-full-panel-"] article#douyin_login_comp_flat_panel * {
+  pointer-events: auto !important;
 }
 
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-item"],
