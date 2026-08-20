@@ -66,11 +66,12 @@ html.pcwtm body {
   background: var(--pcwtm-bg);
 }
 
-/* overflow-x:hidden + a 100vw player clips a sibling right-column rail.
- * One overflow value — do not split x/y (that recomputes x to auto). */
+/* overflow-x:hidden + a 100vw player clips a sibling right-column rail
+ * (赞/评/藏/享 live there on /video/:id; arrows live inside the player).
+ * Do not clip the document on detail — one overflow value, visible. */
 html.pcwtm.pcwtm-video,
 html.pcwtm.pcwtm-video body {
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
 html.pcwtm body {
@@ -471,6 +472,9 @@ html.pcwtm [data-e2e="video-detail"] .positionBox,
 html.pcwtm.pcwtm-video .positionBox,
 html.pcwtm .pcwtm-active-aweme .positionBox,
 html.pcwtm [class*="hide-interaction-area"].positionBox {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
   position: absolute !important;
   right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;
   bottom: calc(var(--pcwtm-space) + env(safe-area-inset-bottom)) !important;
@@ -479,6 +483,7 @@ html.pcwtm [class*="hide-interaction-area"].positionBox {
   width: auto !important;
   height: auto !important;
   min-width: var(--pcwtm-tap);
+  min-height: var(--pcwtm-tap);
   transform: none !important;
   z-index: 40;
   visibility: visible !important;
@@ -486,6 +491,14 @@ html.pcwtm [class*="hide-interaction-area"].positionBox {
   pointer-events: auto !important;
   background: transparent !important;
   box-shadow: none !important;
+  content-visibility: visible !important;
+}
+
+/* /video/:id: official rail may sit in a sibling column that 100dvh
+ * layout pushed below the fold. fixed escapes that clip. */
+html.pcwtm.pcwtm-video .positionBox,
+html.pcwtm.pcwtm-video .pcwtm-active-aweme .positionBox {
+  position: fixed !important;
 }
 
 html.pcwtm [data-e2e="feed-comment-icon"],
@@ -495,13 +508,18 @@ html.pcwtm [data-e2e="video-player-share"],
 html.pcwtm [data-e2e$="-digg"],
 html.pcwtm [data-e2e*="comment-icon"],
 html.pcwtm [data-e2e$="-collect"],
-html.pcwtm [data-e2e$="-share"] {
+html.pcwtm [data-e2e$="-share"],
+html.pcwtm [data-e2e*="collect"],
+html.pcwtm [data-e2e*="share"],
+html.pcwtm [data-e2e*="like"] {
+  display: flex !important;
   pointer-events: auto !important;
   touch-action: manipulation;
   min-width: var(--pcwtm-tap);
   min-height: var(--pcwtm-tap);
   visibility: visible !important;
   opacity: 1 !important;
+  content-visibility: visible !important;
 }
 
 /* Official bottom chrome covers watch. Hide those nodes only.
@@ -530,10 +548,28 @@ html.pcwtm .xgplayer-play,
 html.pcwtm .xgplayer-time,
 html.pcwtm [data-e2e="xgplayer-page-full-screen"],
 html.pcwtm [data-e2e="video-player-auto-play"],
-html.pcwtm [data-e2e="danmaku-container"],
-html.pcwtm [data-e2e="video-play-more"]:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e$="-digg"])):not(:has([data-e2e*="comment-icon"])) {
+html.pcwtm [data-e2e="danmaku-container"] {
   display: none !important;
   content-visibility: hidden;
+}
+
+/* Do NOT display:none [data-e2e=video-play-more] on /video/:id.
+ * Live: after login close, arrows stay in .xgplayer-playswitch; the
+ * official 赞/评/藏/享 cluster is often under video-play-more without
+ * video-player-digg / feed-comment-icon, so the old :not(:has()) hid
+ * the whole rail. Recommend may still hide a more-menu that has no
+ * rail / positionBox. */
+html.pcwtm:not(.pcwtm-video) [data-e2e="video-play-more"]:not(:has(.positionBox)):not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e$="-digg"])):not(:has([data-e2e*="comment-icon"])):not(:has([data-e2e*="collect"])):not(:has([data-e2e*="share"])) {
+  display: none !important;
+  content-visibility: hidden;
+}
+html.pcwtm.pcwtm-video [data-e2e="video-play-more"] {
+  display: flex !important;
+  flex-direction: column !important;
+  content-visibility: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 html.pcwtm .xgplayer-controls,
@@ -747,12 +783,12 @@ html.pcwtm [data-e2e="comment-item"] {
  * article * { auto } because :not(#id) adds ID specificity — X computed
  * pe:none; elementFromPoint at the X hit #captcha_container; click did
  * not dismiss. Never hide a wrapper that also holds the rail. */
-html.pcwtm [id^="login-full-panel-"]:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
+html.pcwtm [id^="login-full-panel-"]:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
   pointer-events: none !important;
 }
-html.pcwtm #login-panel-new:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])),
-html.pcwtm #douyin-login-new-id:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])),
-html.pcwtm article#douyin_login_comp_flat_panel:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)) {
+html.pcwtm #login-panel-new:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])),
+html.pcwtm #douyin-login-new-id:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])),
+html.pcwtm article#douyin_login_comp_flat_panel:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)) {
   pointer-events: none !important;
   visibility: hidden !important;
   width: auto !important;
@@ -934,17 +970,32 @@ html.pcwtm.pcwtm-video #basePlayerContainer {
   background: var(--pcwtm-bg) !important;
 }
 
-/* Overlay official action hosts that sit beside the player, not inside it. */
+/* Overlay official action hosts that sit beside the player, not inside it.
+ * Do not require video-player-digg / feed-comment-icon — /video/:id often
+ * uses other *digg* / *collect* / *share* e2e, or .positionBox.
+ * Do not :has(*comment*) — that matches the comments column. */
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has(.positionBox),
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e*="digg"]),
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e*="collect"]),
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e*="share"]),
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e$="-digg"]),
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e*="comment-icon"]),
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e="video-player-digg"]),
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e="feed-comment-icon"]),
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e="video-player-collect"]),
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e="video-player-share"]),
+html.pcwtm.pcwtm-video .leftContainer ~ *:has(.positionBox),
+html.pcwtm.pcwtm-video .leftContainer ~ *:has([data-e2e*="digg"]),
+html.pcwtm.pcwtm-video .leftContainer ~ *:has([data-e2e*="collect"]),
+html.pcwtm.pcwtm-video .leftContainer ~ *:has([data-e2e*="share"]),
 html.pcwtm.pcwtm-video .leftContainer ~ *:has([data-e2e$="-digg"]),
 html.pcwtm.pcwtm-video .leftContainer ~ *:has([data-e2e*="comment-icon"]),
+html.pcwtm.pcwtm-video #playerContainer ~ *:has(.positionBox),
+html.pcwtm.pcwtm-video #playerContainer ~ *:has([data-e2e*="digg"]),
 html.pcwtm.pcwtm-video #playerContainer ~ *:has([data-e2e$="-digg"]),
 html.pcwtm.pcwtm-video #playerContainer ~ *:has([data-e2e*="comment-icon"]),
+html.pcwtm.pcwtm-video #basePlayerContainer ~ *:has(.positionBox),
+html.pcwtm.pcwtm-video #basePlayerContainer ~ *:has([data-e2e*="digg"]),
 html.pcwtm.pcwtm-video #basePlayerContainer ~ *:has([data-e2e$="-digg"]),
 html.pcwtm.pcwtm-video #basePlayerContainer ~ *:has([data-e2e*="comment-icon"]) {
   position: fixed !important;
