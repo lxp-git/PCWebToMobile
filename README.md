@@ -14,7 +14,7 @@
 
 | 站点 | 状态 | 安装 |
 | --- | --- | --- |
-| 哔哩哩哩 `www.bilibili.com` | 首页 + 播放页可用 | [bilibili.user.js](https://github.com/lxp-git/PCWebToMobile/raw/master/sites/bilibili/bilibili.user.js) |
+| 哔哩哔哩 `www.bilibili.com` | 首页 + 播放页可用 | [bilibili.user.js](https://github.com/lxp-git/PCWebToMobile/raw/master/sites/bilibili/bilibili.user.js) |
 
 ### 怎么装
 
@@ -24,13 +24,13 @@
 
 `?pcwtm=1` 强制开，`?pcwtm=0` 强制关。宽屏桌面默认不改。
 
-### 哔哩哩哩 0.1.0
+### 哔哩哔哩 0.1.0
 
 已经能用：
 
 - 首页：去掉 1100px 锁宽，顶栏搜索 + 头像 + 菜单，分区横滑，双列推荐
 - 播放页：播放器全宽 16:9，点赞投币收藏分享、评论、弹幕输入都还在
-- 菜单抽屉里仍能进历史、动态、投稿、创作中心等 PC 功能
+- 菜单抽尉里仍能进历史、动态、投稿、创作中心等 PC 功能
 - 站内链接尽量同页打开，不新开标签
 
 还没专门做：搜索结果页、空间、动态、直播、番剧播放页（脚本会挂上，但只有全局去 min-width）。
