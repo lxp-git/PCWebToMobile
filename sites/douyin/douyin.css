@@ -740,22 +740,36 @@ html.pcwtm [data-e2e="comment-item"] {
   max-width: 100% !important;
 }
 
-/* After official close, #login-full-panel-* / #login-panel-new stay in the
- * DOM. :has(#login-panel-new) is still true — do not treat that as "wall
- * open" and display:none a middle ancestor of .positionBox.
- * Empty leftover overlays: pointer-events:none only. Never hide a wrapper
- * that contains the official like/comment rail. */
-html.pcwtm [id^="login-full-panel-"]:not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
+/* Leftover login overlays after official close. Do NOT apply while the
+ * wall is open: live 390, the official X is a 37×36 svg sibling of
+ * #douyin_login_comp_flat_panel_title (title "Log in to Douyin"). The old
+ * #login-panel-new *:not(#flat):not(#mobile) { pointer-events:none } beat
+ * article * { auto } because :not(#id) adds ID specificity — X computed
+ * pe:none; elementFromPoint at the X hit #captcha_container; click did
+ * not dismiss. Never hide a wrapper that also holds the rail. */
+html.pcwtm [id^="login-full-panel-"]:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
   pointer-events: none !important;
 }
-html.pcwtm [id^="login-full-panel-"] > *:not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
+html.pcwtm #login-panel-new:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])),
+html.pcwtm #douyin-login-new-id:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])),
+html.pcwtm article#douyin_login_comp_flat_panel:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)) {
+  pointer-events: none !important;
+  visibility: hidden !important;
+  width: auto !important;
+  max-width: none !important;
+}
+
+/* Empty captcha shell sits on the title-row X (live elementFromPoint). */
+html.pcwtm #captcha_container:not(:has(iframe)):not(:has(canvas)) {
   pointer-events: none !important;
 }
 
-html.pcwtm #login-panel-new:not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])) *:not(#douyin_login_comp_flat_panel):not(#douyin_login_comp_single_panel):not(#douyin_login_comp_mobile_code),
-html.pcwtm #douyin-login-new-id:not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])) *:not(#douyin_login_comp_flat_panel):not(#douyin_login_comp_single_panel):not(#douyin_login_comp_mobile_code) {
-  pointer-events: none !important;
-}
+/* Official title-row closer — restore hits we previously swallowed. */
+html.pcwtm #douyin_login_comp_flat_panel_title,
+html.pcwtm #douyin_login_comp_flat_panel_title ~ *,
+html.pcwtm #douyin_login_comp_flat_panel_title ~ * *,
+html.pcwtm article#douyin_login_comp_flat_panel,
+html.pcwtm article#douyin_login_comp_flat_panel *,
 html.pcwtm #login-panel-new #douyin_login_comp_flat_panel,
 html.pcwtm #login-panel-new #douyin_login_comp_flat_panel *,
 html.pcwtm #login-panel-new #douyin_login_comp_single_panel,
@@ -767,9 +781,7 @@ html.pcwtm #douyin-login-new-id #douyin_login_comp_flat_panel *,
 html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel,
 html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel *,
 html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code,
-html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code *,
-html.pcwtm article#douyin_login_comp_flat_panel,
-html.pcwtm article#douyin_login_comp_flat_panel * {
+html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code * {
   pointer-events: auto !important;
 }
 
@@ -1087,12 +1099,18 @@ html.pcwtm .pcwtm-sheet-panel [class*="EveryoneSearch"] {
   content-visibility: hidden;
 }
 
-/* Official close is display:none or emptying children. QA: X clicked,
- * title changed, white card stayed — because we set display:flex
- * !important on these hosts. Stretch width only. Never set display. */
-html.pcwtm #login-panel-new,
-html.pcwtm #douyin-login-new-id,
-html.pcwtm article#douyin_login_comp_flat_panel {
+/* Stretch width only WHILE the official form/title is in the tree.
+ * Never set display — official close is display:none or empty children.
+ * Do not 100vw a leftover wrapper that no longer has a login form. */
+html.pcwtm #login-panel-new:has(#douyin_login_comp_mobile_code),
+html.pcwtm #login-panel-new:has(#douyin_login_comp_single_panel),
+html.pcwtm #login-panel-new:has(#douyin_login_comp_flat_panel_title),
+html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_mobile_code),
+html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_single_panel),
+html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_flat_panel_title),
+html.pcwtm article#douyin_login_comp_flat_panel:has(#douyin_login_comp_mobile_code),
+html.pcwtm article#douyin_login_comp_flat_panel:has(#douyin_login_comp_single_panel),
+html.pcwtm article#douyin_login_comp_flat_panel:has(#douyin_login_comp_flat_panel_title) {
   box-sizing: border-box !important;
   width: 100vw !important;
   max-width: 100vw !important;
