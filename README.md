@@ -14,7 +14,7 @@
 
 | 站点 | 状态 | 下载 |
 | --- | --- | --- |
-| 哔哩哩哩 `www.bilibili.com` | 首页 + 播放页可用 | [下载页](sites/bilibili/) · [bilibili.user.js](sites/bilibili/bilibili.user.js) |
+| 哔哩哔哩 `www.bilibili.com` | 首页 + 播放页可用 | [下载页](sites/bilibili/) · [bilibili.user.js](sites/bilibili/bilibili.user.js) |
 
 ### 怎么用（iOS Alook）
 
@@ -28,7 +28,7 @@
 
 其它能装油猴的浏览器（Kiwi / Firefox / Edge Canary + Tampermonkey / Violentmonkey）也可以直接装 `.user.js`。
 
-### 哔哩哩哩 0.1.0
+### 哔哩哔哩 0.1.0
 
 已经能用：
 
