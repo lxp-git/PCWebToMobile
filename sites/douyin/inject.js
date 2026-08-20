@@ -2,9 +2,9 @@
   "use strict";
 
   // After first paint we do not observe document with subtree:true.
-  // Watch #slidelist / #douyin-header (childList only), plus popstate,
-  // same-origin clicks, and a 2s interval. Coalesce with one rAF.
-  // collectLinks runs only when the drawer opens (textContent, never innerText).
+  // Watch the smallest live roots (childList only, plus style/class on
+  // comment side panels). Coalesce with one rAF. collectLinks runs only
+  // when the drawer opens (textContent, never innerText).
 
   var STYLE_ID = "pcwtm-douyin-css";
   var WIDTH_MAX = 920;
@@ -39,6 +39,7 @@
   var detailTrapLive = false;
   var detailTrapFor = "";
   var detailTrapPushes = 0;
+  var lastAwemeKey = "";
 
   function store(key, value) {
     try {
@@ -386,6 +387,7 @@
       setTimeout(recoverVideoBack, 0);
       setTimeout(recoverVideoBack, 300);
       if (isVideoPath()) setTimeout(armDetailBackTrap, 0);
+      onNavigate();
       return ret;
     };
     history.replaceState = function (state, title, url) {
@@ -397,6 +399,7 @@
         detailTrapLive = false;
         setTimeout(armDetailBackTrap, 0);
       }
+      onNavigate();
       return ret;
     };
     try {
@@ -465,6 +468,7 @@
     root.classList.toggle("pcwtm-video", video);
     root.classList.toggle("pcwtm-modal", modal);
     if (video || isDetailPage()) rememberVideoPage();
+    markActiveAweme();
   }
 
   function syncMode() {
@@ -482,22 +486,116 @@
 
   var HOST_CLOSE_CLASS = "pcwtm-host-close";
 
+  function visibleArea(el) {
+    if (!el || !el.getBoundingClientRect) return 0;
+    var r = el.getBoundingClientRect();
+    var vh = window.innerHeight || 0;
+    var vw = window.innerWidth || 0;
+    var h = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+    var w = Math.min(r.right, vw) - Math.max(r.left, 0);
+    if (h <= 0 || w <= 0) return 0;
+    return h * w;
+  }
+
+  function activeVideoRoot() {
+    var active = document.querySelector("[data-e2e='feed-active-video']");
+    if (active && active.isConnected && visibleArea(active) > 0) return active;
+    var nodes = document.querySelectorAll(
+      "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail'], #sliderVideo"
+    );
+    var best = null;
+    var bestA = 0;
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var area = visibleArea(nodes[i]);
+      if (area > bestA) {
+        bestA = area;
+        best = nodes[i];
+      }
+    }
+    if (best && bestA > 6400) return best;
+    return document.querySelector("[data-e2e='video-detail']") || document.body;
+  }
+
+  function awemeKey() {
+    var path = location.pathname || "";
+    var m = path.match(/\/video\/(\d+)/);
+    var id = m ? m[1] : "";
+    if (!id) {
+      var player = document.querySelector("[data-e2e='player-container'][class*='video_']");
+      if (player && player.className) {
+        var cm = String(player.className).match(/video_(\d+)/);
+        if (cm) id = cm[1];
+      }
+    }
+    var scope = activeVideoRoot();
+    var e2e = scope && scope.getAttribute ? scope.getAttribute("data-e2e") || "" : "";
+    return id + "@" + e2e;
+  }
+
+  function markActiveAweme() {
+    var scope = activeVideoRoot();
+    var prev = document.querySelectorAll(".pcwtm-active-aweme");
+    var i;
+    var swapped = false;
+    for (i = 0; i < prev.length; i++) {
+      if (prev[i] !== scope) prev[i].classList.remove("pcwtm-active-aweme");
+    }
+    if (scope && scope.classList && scope !== document.body) {
+      scope.classList.add("pcwtm-active-aweme");
+    }
+    var key = awemeKey();
+    if (key !== lastAwemeKey) {
+      lastAwemeKey = key;
+      swapped = true;
+      document.documentElement.classList.remove("pcwtm-comments");
+      var leftover = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
+      for (i = 0; i < leftover.length; i++) {
+        leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+      }
+    }
+    return swapped;
+  }
+
+  function commentSidePanels() {
+    return document.querySelectorAll("#videoSideCard, #videoSideBar");
+  }
+
+  function panelOwner(el) {
+    if (!el || !el.closest) return null;
+    return el.closest(
+      "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail'], #sliderVideo"
+    );
+  }
+
   /* Live: official close sets #videoSideCard/#videoSideBar width to 0 but
    * leaves #relatedVideoCard and [data-e2e=comment-list] in the DOM.
-   * Peek without our sheet class so offsetWidth is the host's, not ours. */
+   * Peek without our sheet class so offsetWidth is the host's, not ours.
+   * After /video/:id SPA swap, getElementById still hits the first card —
+   * walk every id twin and keep the one for the in-view aweme. */
   function officialCommentPanel() {
     var root = document.documentElement;
     var held = root.classList.contains("pcwtm-comments");
     if (held) root.classList.remove("pcwtm-comments");
-    var card = document.getElementById("videoSideCard");
-    var bar = document.getElementById("videoSideBar");
-    var cw = card ? card.offsetWidth : 0;
-    var bw = bar ? bar.offsetWidth : 0;
-    var panel = null;
-    if (cw >= bw && cw > 48) panel = card;
-    else if (bw > 48) panel = bar;
+    var scope = activeVideoRoot();
+    var panels = commentSidePanels();
+    var best = null;
+    var bestW = 0;
+    var i;
+    for (i = 0; i < panels.length; i++) {
+      var el = panels[i];
+      if (!el || !el.isConnected) continue;
+      var w = el.offsetWidth || 0;
+      if (w <= 48) continue;
+      var owner = panelOwner(el);
+      if (owner && scope && owner !== scope && visibleArea(owner) < 6400) continue;
+      if (w > bestW) {
+        bestW = w;
+        best = el;
+      }
+    }
     if (held) root.classList.add("pcwtm-comments");
-    return panel;
+    return best;
   }
 
   function findOfficialClose(panel) {
@@ -529,12 +627,32 @@
     return best;
   }
 
+  function findActiveCommentIcon() {
+    var scope = activeVideoRoot();
+    var icons = document.querySelectorAll("[data-e2e='feed-comment-icon']");
+    var scoped = null;
+    var vis = null;
+    var i;
+    for (i = 0; i < icons.length; i++) {
+      var icon = icons[i];
+      var r = icon.getBoundingClientRect();
+      var shown = r.width > 1 && r.height > 1;
+      if (scope && scope.contains && scope.contains(icon)) {
+        if (shown || !scoped) scoped = icon;
+        if (shown) break;
+      }
+      if (shown && !vis) vis = icon;
+    }
+    return scoped || vis || null;
+  }
+
   function findRailCommentChip() {
-    var icon = document.querySelector("[data-e2e='feed-comment-icon']");
+    var icon = findActiveCommentIcon();
     if (!icon) return null;
-    var scope = icon.parentElement && icon.parentElement.parentElement;
-    if (!scope) scope = document.body;
-    var nodes = scope.querySelectorAll("button, [role='button'], div, span");
+    var rail = icon.parentElement && icon.parentElement.parentElement;
+    if (!rail) rail = icon.closest && icon.closest(".positionBox");
+    if (!rail) rail = document.body;
+    var nodes = rail.querySelectorAll("button, [role='button'], div, span");
     var i;
     for (i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -570,12 +688,13 @@
         if (!t || !t.closest) return;
         if (
           !t.closest(
-            "#videoSideCard, #videoSideBar, [data-e2e='feed-comment-icon'], #sliderVideo, .xgplayer, .positionBox"
+            "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='feed-comment-icon'], [data-e2e='comment-list'], [data-e2e='video-detail'], [data-e2e='feed-video'], [data-e2e='feed-active-video'], #sliderVideo, .xgplayer, .positionBox"
           )
         )
           return;
         setTimeout(syncCommentSheet, 50);
         setTimeout(syncCommentSheet, 250);
+        setTimeout(syncCommentSheet, 600);
       },
       true
     );
@@ -633,20 +752,16 @@
   }
 
   function syncCommentSheet() {
+    markActiveAweme();
     var panel = officialCommentPanel();
     document.documentElement.classList.toggle("pcwtm-comments", !!panel);
-    if (!panel) {
-      var leftover = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
-      var i;
-      for (i = 0; i < leftover.length; i++) {
-        leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
-      }
-      return;
+    var marked = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
+    var i;
+    for (i = 0; i < marked.length; i++) {
+      if (marked[i] !== panel) marked[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
     }
-    ["videoSideCard", "videoSideBar"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.classList.toggle("pcwtm-sheet-panel", el === panel);
-    });
+    if (!panel) return;
+    panel.classList.add("pcwtm-sheet-panel");
     markOfficialClose(panel);
     markSheetTabs(panel);
     hideSheetPromos(panel);
@@ -922,11 +1037,23 @@
           dy < 0
             ? '[data-e2e="video-switch-next-arrow"]'
             : '[data-e2e="video-switch-prev-arrow"]';
-        var arrow = document.querySelector(sel);
+        var arrow = officialSwitchArrow(sel);
         if (arrow) arrow.click();
       },
       { passive: true }
     );
+  }
+
+  function officialSwitchArrow(sel) {
+    var scope = activeVideoRoot();
+    var arrow = scope && scope.querySelector ? scope.querySelector(sel) : null;
+    if (arrow && visibleArea(arrow) > 0) return arrow;
+    var all = document.querySelectorAll(sel);
+    var i;
+    for (i = 0; i < all.length; i++) {
+      if (visibleArea(all[i]) > 0) return all[i];
+    }
+    return all[0] || null;
   }
 
   function sameTab() {
@@ -958,6 +1085,11 @@
     if (on) {
       ensureChrome();
       startWatch();
+      if (markActiveAweme()) {
+        setTimeout(syncCommentSheet, 50);
+        setTimeout(syncCommentSheet, 250);
+        setTimeout(syncCommentSheet, 600);
+      }
       syncCommentSheet();
       rememberVideoPage();
       retargetOfficialVideoBack();
@@ -965,6 +1097,14 @@
     } else {
       stopWatch();
     }
+  }
+
+  function watchRoot(el, opts) {
+    if (!el || observedRoots.indexOf(el) !== -1) return;
+    var obs = new MutationObserver(schedule);
+    obs.observe(el, opts || { childList: true });
+    rootObservers.push(obs);
+    observedRoots.push(el);
   }
 
   function connectSmallRoots() {
@@ -981,19 +1121,37 @@
     }
     observedRoots = live;
     rootObservers = nextObs;
-    ["slidelist", "douyin-header", "videoSideCard", "videoSideBar"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el || observedRoots.indexOf(el) !== -1) return;
-      var obs = new MutationObserver(schedule);
-      var opts = { childList: true };
-      if (id === "videoSideCard" || id === "videoSideBar") {
-        opts.attributes = true;
-        opts.attributeFilter = ["style", "class"];
-      }
-      obs.observe(el, opts);
-      rootObservers.push(obs);
-      observedRoots.push(el);
-    });
+    watchRoot(document.getElementById("slidelist"), { childList: true });
+    watchRoot(document.getElementById("douyin-header"), { childList: true });
+    watchRoot(document.getElementById("sliderVideo"), { childList: true });
+    watchRoot(document.getElementById("douyin-right-container"), { childList: true });
+    var sides = commentSidePanels();
+    for (i = 0; i < sides.length; i++) {
+      watchRoot(sides[i], {
+        childList: true,
+        attributes: true,
+        attributeFilter: ["style", "class"],
+      });
+    }
+    var locals = document.querySelectorAll(
+      "[data-e2e='video-detail'], [data-e2e='feed-active-video'], .leftContainer, .route-scroll-container, .parent-route-container"
+    );
+    for (i = 0; i < locals.length; i++) {
+      watchRoot(locals[i], { childList: true });
+    }
+    bindDetailScroll();
+  }
+
+  function bindDetailScroll() {
+    var roots = document.querySelectorAll(
+      ".route-scroll-container, .parent-route-container, #slidelist"
+    );
+    var i;
+    for (i = 0; i < roots.length; i++) {
+      if (roots[i].getAttribute("data-pcwtm-scroll") === "1") continue;
+      roots[i].setAttribute("data-pcwtm-scroll", "1");
+      roots[i].addEventListener("scroll", schedule, { passive: true });
+    }
   }
 
   function onNavigate() {

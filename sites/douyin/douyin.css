@@ -20,8 +20,10 @@
  *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar
  * Hashed class names (e.g. .eRu21rp0) are avoided — they rotate.
  * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.
- * JS adds html.pcwtm-comments only when #videoSideCard / #videoSideBar official
- * width is > 0 (live: closed=0, open≈391). :has(comment-list) stays true after
+ * JS marks the in-view aweme with .pcwtm-active-aweme after /video/:id scroll.
+ * JS adds html.pcwtm-comments only when a #videoSideCard / #videoSideBar official
+ * width is > 0 (live: closed=0, open≈391). querySelectorAll — not getElementById —
+ * so a later card's panel is not skipped. :has(comment-list) stays true after
  * official close — do not use it as the open signal.
  * JS may mark the official close node with .pcwtm-host-close (host node only).
  * Recommend door is /?recommend=1&from_nav=1 (bare ?recommend=1 bounces to jingxuan).
@@ -320,7 +322,8 @@ html.pcwtm.pcwtm-modal [data-e2e="slideList"] {
   min-height: 100dvh !important;
 }
 
-html.pcwtm #slidelist [data-e2e="feed-video"]:not([data-e2e="feed-active-video"]) {
+html.pcwtm #slidelist [data-e2e="feed-video"]:not([data-e2e="feed-active-video"]),
+html.pcwtm [data-e2e="slideList"] [data-e2e="feed-video"]:not([data-e2e="feed-active-video"]) {
   content-visibility: auto;
   contain-intrinsic-size: auto 100dvh;
 }
@@ -403,7 +406,8 @@ html.pcwtm .xgplayer-playswitch {
  * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay
  * in the DOM at width 0. :has() would keep this block applied. */
 html.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,
-html.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel {
+html.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
   position: fixed !important;
   left: 0 !important;
   right: 0 !important;
@@ -484,8 +488,10 @@ html.pcwtm .pcwtm-host-close svg {
 /* Official sheet tabs: one 44px row, no wrap, no chips. Same sheet bg. */
 html.pcwtm.pcwtm-comments #videoSideCard [role="tablist"],
 html.pcwtm.pcwtm-comments #videoSideBar [role="tablist"],
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [role="tablist"],
 html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar,
 html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-bar,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs {
   display: flex !important;
   flex-wrap: nowrap !important;
@@ -507,16 +513,20 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs {
 
 html.pcwtm.pcwtm-comments #videoSideCard [role="tablist"]::-webkit-scrollbar,
 html.pcwtm.pcwtm-comments #videoSideBar [role="tablist"]::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [role="tablist"]::-webkit-scrollbar,
 html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar::-webkit-scrollbar,
 html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar::-webkit-scrollbar,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-bar::-webkit-scrollbar,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs::-webkit-scrollbar {
   display: none;
 }
 
 html.pcwtm.pcwtm-comments #videoSideCard [role="tab"],
 html.pcwtm.pcwtm-comments #videoSideBar [role="tab"],
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [role="tab"],
 html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab,
 html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-tab,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > *:not(.semi-tabs-ink-bar) {
   flex: 0 0 auto !important;
   height: 44px !important;
@@ -531,19 +541,23 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > *:not(.semi-tabs-ink-bar) {
 
 html.pcwtm.pcwtm-comments #videoSideCard [role="tab"][aria-selected="true"],
 html.pcwtm.pcwtm-comments #videoSideBar [role="tab"][aria-selected="true"],
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [role="tab"][aria-selected="true"],
 html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab-active,
 html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab-active,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-tab-active,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > [aria-selected="true"] {
   color: var(--pcwtm-fg) !important;
 }
 
 html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-ink-bar,
-html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-ink-bar {
+html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-ink-bar,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-ink-bar {
   background: var(--pcwtm-accent) !important;
 }
 
 html.pcwtm.pcwtm-comments #videoSideCard .semi-tabs,
 html.pcwtm.pcwtm-comments #videoSideBar .semi-tabs,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs,
 html.pcwtm.pcwtm-comments #relatedVideoCard {
   background: var(--pcwtm-elevated) !important;
 }
@@ -558,8 +572,10 @@ html.pcwtm.pcwtm-comments [data-e2e="comment-list"] {
 
 html.pcwtm.pcwtm-comments #videoSideCard #merge-all-comment-container,
 html.pcwtm.pcwtm-comments #videoSideBar #merge-all-comment-container,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel #merge-all-comment-container,
 html.pcwtm.pcwtm-comments #videoSideCard [data-e2e="comment-list"],
-html.pcwtm.pcwtm-comments #videoSideBar [data-e2e="comment-list"] {
+html.pcwtm.pcwtm-comments #videoSideBar [data-e2e="comment-list"],
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-list"] {
   max-height: calc(var(--pcwtm-sheet) - 44px);
   overflow-x: hidden;
   overflow-y: auto;
@@ -625,10 +641,21 @@ html.pcwtm [data-e2e="video-detail"] .xgplayer {
   background: var(--pcwtm-bg);
 }
 
+html.pcwtm [data-e2e="video-detail"]:not(.pcwtm-active-aweme):has(~ [data-e2e="video-detail"]),
+html.pcwtm [data-e2e="video-detail"] ~ [data-e2e="video-detail"]:not(.pcwtm-active-aweme) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 100dvh;
+}
+
+html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme {
+  content-visibility: visible;
+}
+
 html.pcwtm [data-e2e="video-detail"] .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
 html.pcwtm [data-e2e="video-detail"] .leftContainer > div > div:has(.comment-mainContent[data-e2e="comment-list"]),
 html.pcwtm [data-e2e="video-detail"] #comment-input-container,
-html.pcwtm [data-e2e="video-detail"] [data-e2e="comment-list"] {
+html.pcwtm [data-e2e="video-detail"] [data-e2e="comment-list"],
+html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme [data-e2e="comment-list"] {
   position: relative !important;
   width: 100% !important;
   max-width: 100% !important;
@@ -733,13 +760,23 @@ html.pcwtm #slidelist[class*="isCssFullScreen"] {
 
 html.pcwtm a[href*="apps.apple.com"],
 html.pcwtm a[href*="itunes.apple.com"],
+html.pcwtm a[href*="play.google.com"],
+html.pcwtm a[href*="app.adjust.com"],
 html.pcwtm [class*="get_app"],
 html.pcwtm [class*="get-app"],
+html.pcwtm [class*="getApp"],
+html.pcwtm [class*="GetApp"],
+html.pcwtm [class*="download-app"],
+html.pcwtm [class*="DownloadApp"],
+html.pcwtm [class*="open-in-app"],
+html.pcwtm [class*="OpenInApp"],
 html.pcwtm .pcwtm-hide-promo,
 html.pcwtm #videoSideCard [class*="everyone-search"],
 html.pcwtm #videoSideBar [class*="everyone-search"],
+html.pcwtm .pcwtm-sheet-panel [class*="everyone-search"],
 html.pcwtm #videoSideCard [class*="EveryoneSearch"],
-html.pcwtm #videoSideBar [class*="EveryoneSearch"] {
+html.pcwtm #videoSideBar [class*="EveryoneSearch"],
+html.pcwtm .pcwtm-sheet-panel [class*="EveryoneSearch"] {
   display: none !important;
   content-visibility: hidden;
 }

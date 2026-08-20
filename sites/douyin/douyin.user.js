@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         PCWebToMobile · 抖音
 // @namespace    https://local1st.app/pcwebtomobile
-// @version      0.2.6
+// @version      0.2.7
 // @description  用 CSS 把 douyin.com PC 网页收成手机能用的布局，不抓内容，保留网页版功能
 // @author       PCWebToMobile
 // @match        *://www.douyin.com/*
@@ -12,12 +12,12 @@
 (function () {
   "use strict";
 
-  window.__PCWTM_CSS__ = "/* PCWebToMobile \u00b7 douyin\n * Applied under html.pcwtm (userscript) or @media (max-width: 920px) (Stylus).\n * Layout only \u2014 keep Douyin's own DOM, player, actions, and comments.\n *\n * Tokens once, under html.pcwtm: near-black video + quiet gray + Douyin's red.\n * Overlay chrome is thin; unused PC rails stay in the DOM (drawer reads them)\n * but are hidden with display / content-visibility, not JS loops.\n *\n * Selectors verified on the official PC shell (2026-08-20, logged-out):\n *   #root #douyin-header #douyin-header-menuCt\n *   #douyin-navigation / [data-e2e=\"douyin-navigation\"]\n *   #douyin-sidebar #douyin-sidebar-new #douyin-right-container\n *   Recommend swipe (/?recommend=1): #slidelist.recommend-slidelist #sliderVideo\n *     [data-e2e=\"feed-active-video\"|\"slideList\"|\"feed-video\"|\"feed-comment-icon\"]\n *     .page-recommend-container .sliderVideo .playerContainer .basePlayerContainer\n *     .xgplayer .positionBox #video-info-wrap\n *   Comments on feed: #videoSideCard (visible) #videoSideBar (often width 0)\n *     #relatedVideoCard #merge-all-comment-container [data-e2e=\"comment-list\"]\n *   /video/:id: [data-e2e=\"video-detail\"|\"player-container\"] .leftContainer\n *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar\n * Hashed class names (e.g. .eRu21rp0) are avoided \u2014 they rotate.\n * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.\n * JS adds html.pcwtm-comments only when #videoSideCard / #videoSideBar official\n * width is > 0 (live: closed=0, open\u2248391). :has(comment-list) stays true after\n * official close \u2014 do not use it as the open signal.\n * JS may mark the official close node with .pcwtm-host-close (host node only).\n * Recommend door is /?recommend=1&from_nav=1 (bare ?recommend=1 bounces to jingxuan).\n * Login wall (QA 500px, 2026-08-20): #login-panel-new is already 500.\n * Overflow is article#douyin_login_comp_flat_panel (726, QR + phone).\n * Left #douyin_login_comp_scan_code / right #douyin_login_comp_single_panel.\n * Official X sits on the right column (~x=667) \u2014 keep it in-viewport.\n */\n\nhtml.pcwtm {\n  --pcwtm-bg: #000;\n  --pcwtm-elevated: #161616;\n  --pcwtm-fg: #ececec;\n  --pcwtm-muted: #8a8a8a;\n  --pcwtm-accent: #fe2c55;\n  --pcwtm-border: rgba(236, 236, 236, 0.12);\n  --pcwtm-space: 8px;\n  --pcwtm-radius: 8px;\n  --pcwtm-bar: 48px;\n  --pcwtm-sheet: min(52dvh, 420px);\n  --header-height: var(--pcwtm-bar);\n  color-scheme: dark;\n}\n\nhtml.pcwtm,\nhtml.pcwtm body {\n  min-width: 0 !important;\n  max-width: 100% !important;\n  width: 100% !important;\n  overflow-x: hidden !important;\n  background: var(--pcwtm-bg);\n}\n\nhtml.pcwtm body {\n  padding-left: env(safe-area-inset-left);\n  padding-right: env(safe-area-inset-right);\n}\n\nhtml.pcwtm.pcwtm-recommend body,\nhtml.pcwtm.pcwtm-modal body {\n  padding-left: 0;\n  padding-right: 0;\n}\n\n/* Shells that lock a desktop min-width (~580px+ was observed at 390 CSS px) */\nhtml.pcwtm #root,\nhtml.pcwtm #root > div,\nhtml.pcwtm #douyin-right-container,\nhtml.pcwtm #douyin-header,\nhtml.pcwtm #slidelist,\nhtml.pcwtm #sliderVideo,\nhtml.pcwtm .parent-route-container,\nhtml.pcwtm .route-scroll-container,\nhtml.pcwtm .page-recommend-container,\nhtml.pcwtm .playerContainer,\nhtml.pcwtm .basePlayerContainer,\nhtml.pcwtm .leftContainer,\nhtml.pcwtm [data-e2e=\"video-detail\"],\nhtml.pcwtm [data-e2e=\"slideList\"],\nhtml.pcwtm [data-e2e=\"player-container\"] {\n  min-width: 0 !important;\n  max-width: 100% !important;\n  width: 100% !important;\n  box-sizing: border-box !important;\n}\n\n/* ---------- Unused PC columns: hide in CSS, keep in DOM ---------- */\n\nhtml.pcwtm #douyin-navigation,\nhtml.pcwtm [data-e2e=\"douyin-navigation\"],\nhtml.pcwtm #douyin-sidebar,\nhtml.pcwtm #douyin-sidebar-new,\nhtml.pcwtm img#douyin-temp-sidebar {\n  display: none !important;\n  content-visibility: hidden;\n  contain: strict;\n}\n\n/* ---------- Header (search stays; feed hides this for full-bleed) ---------- */\n\nhtml.pcwtm #douyin-header {\n  position: fixed !important;\n  top: env(safe-area-inset-top) !important;\n  left: 0 !important;\n  right: 0 !important;\n  height: var(--pcwtm-bar) !important;\n  min-height: var(--pcwtm-bar) !important;\n  max-height: var(--pcwtm-bar) !important;\n  margin: 0 !important;\n  padding: 0 56px 0 var(--pcwtm-space) !important;\n  z-index: 10050 !important;\n  display: flex !important;\n  align-items: center !important;\n  gap: var(--pcwtm-space) !important;\n  background: var(--pcwtm-elevated) !important;\n  border-bottom: 1px solid var(--pcwtm-border);\n  color: var(--pcwtm-fg);\n}\n\nhtml.pcwtm.pcwtm-recommend #douyin-header,\nhtml.pcwtm.pcwtm-modal #douyin-header,\nhtml.pcwtm.pcwtm-comments #douyin-header {\n  display: none !important;\n  content-visibility: hidden;\n}\n\nhtml.pcwtm.pcwtm-recommend.pcwtm-searching:not(.pcwtm-comments) #douyin-header,\nhtml.pcwtm.pcwtm-modal.pcwtm-searching:not(.pcwtm-comments) #douyin-header {\n  display: flex !important;\n  content-visibility: visible;\n}\n\nhtml.pcwtm #douyin-header > div,\nhtml.pcwtm #douyin-header > div[data-click=\"doubleClick\"] {\n  min-width: 0 !important;\n  max-width: 100% !important;\n  width: 100% !important;\n  flex: 1 1 auto !important;\n}\n\nhtml.pcwtm #douyin-header input[data-e2e=\"searchbar-input\"],\nhtml.pcwtm #douyin-header input[type=\"search\"],\nhtml.pcwtm #douyin-header input[type=\"text\"] {\n  font-size: 16px !important; /* iOS no-zoom */\n  min-width: 0 !important;\n}\n\nhtml.pcwtm #douyin-header-menuCt {\n  flex: 0 0 auto !important;\n  max-width: none !important;\n  overflow: visible !important;\n}\n\nhtml.pcwtm #douyin-header [data-e2e=\"notice-entry\"],\nhtml.pcwtm #douyin-header [data-e2e=\"im-entry\"],\nhtml.pcwtm #douyin-header [data-e2e=\"something-button\"] {\n  display: none !important;\n  content-visibility: hidden;\n}\n\nhtml.pcwtm #douyin-header [id^=\"douyin-header-menu\"] {\n  flex: 0 0 auto !important;\n}\n\n/* ---------- Overlay chrome ---------- */\n\nhtml.pcwtm #pcwtm-menu-btn {\n  box-sizing: border-box;\n  width: 44px;\n  height: 44px;\n  padding: 0;\n  margin: 0;\n  border: 1px solid var(--pcwtm-border);\n  border-radius: var(--pcwtm-radius);\n  background: var(--pcwtm-elevated);\n  color: var(--pcwtm-fg);\n  display: grid;\n  place-items: center;\n  cursor: pointer;\n  touch-action: manipulation;\n  -webkit-tap-highlight-color: transparent;\n}\n\nhtml.pcwtm #pcwtm-menu-btn.pcwtm-float {\n  position: fixed;\n  top: calc(var(--pcwtm-space) + env(safe-area-inset-top));\n  right: calc(var(--pcwtm-space) + env(safe-area-inset-right));\n  z-index: 10080;\n}\n\nhtml.pcwtm #pcwtm-menu-btn:active {\n  transform: scale(0.96);\n}\n\nhtml.pcwtm #pcwtm-mask {\n  position: fixed;\n  inset: 0;\n  z-index: 10060;\n  background: rgba(0, 0, 0, 0.46);\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 180ms ease;\n  contain: strict;\n  touch-action: manipulation;\n}\n\nhtml.pcwtm.pcwtm-open #pcwtm-mask {\n  opacity: 1;\n  pointer-events: auto;\n}\n\nhtml.pcwtm #pcwtm-drawer {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  width: min(80vw, 320px);\n  z-index: 10070;\n  box-sizing: border-box;\n  background: var(--pcwtm-elevated);\n  color: var(--pcwtm-fg);\n  border-left: 1px solid var(--pcwtm-border);\n  border-radius: 24px 0 0 24px; /* inner 8 + padding 16 */\n  transform: translateX(105%);\n  transition: transform 200ms ease;\n  overflow-x: hidden;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));\n  -webkit-overflow-scrolling: touch;\n  contain: layout paint style;\n  touch-action: manipulation;\n}\n\nhtml.pcwtm.pcwtm-open #pcwtm-drawer {\n  transform: translateX(0);\n}\n\nhtml.pcwtm #pcwtm-drawer a,\nhtml.pcwtm #pcwtm-drawer button {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  box-sizing: border-box;\n  gap: var(--pcwtm-space);\n  margin: 0 0 var(--pcwtm-space);\n  padding: 12px 16px;\n  border: 0;\n  border-radius: var(--pcwtm-radius);\n  background: transparent;\n  color: var(--pcwtm-fg);\n  text-align: left;\n  text-decoration: none;\n  font: inherit;\n  font-size: 15px;\n  line-height: 1.2;\n  cursor: pointer;\n  touch-action: manipulation;\n  -webkit-tap-highlight-color: transparent;\n}\n\nhtml.pcwtm #pcwtm-drawer a:active,\nhtml.pcwtm #pcwtm-drawer button:active {\n  background: rgba(236, 236, 236, 0.06);\n}\n\nhtml.pcwtm #pcwtm-drawer a[aria-current=\"page\"] {\n  color: var(--pcwtm-accent);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  html.pcwtm #pcwtm-mask,\n  html.pcwtm #pcwtm-drawer,\n  html.pcwtm #pcwtm-menu-btn {\n    transition: none;\n  }\n\n  html.pcwtm #pcwtm-menu-btn:active {\n    transform: none;\n  }\n}\n\n/* ---------- Homepage recommend slider (/?recommend=1) ---------- */\n\nhtml.pcwtm #douyin-right-container {\n  margin: 0 !important;\n  padding: 0 !important;\n  padding-top: var(--pcwtm-bar) !important;\n  left: 0 !important;\n}\n\nhtml.pcwtm.pcwtm-recommend #douyin-right-container,\nhtml.pcwtm.pcwtm-modal #douyin-right-container {\n  padding-top: 0 !important;\n}\n\nhtml.pcwtm #slidelist,\nhtml.pcwtm #slidelist.recommend-slidelist,\nhtml.pcwtm [data-e2e=\"slideList\"] {\n  width: 100% !important;\n  height: calc(100dvh - var(--pcwtm-bar)) !important;\n  min-height: calc(100dvh - var(--pcwtm-bar)) !important;\n  margin: 0 !important;\n  padding: 0 !important;\n  padding-right: 0 !important;\n  left: 0 !important;\n}\n\nhtml.pcwtm.pcwtm-recommend #slidelist,\nhtml.pcwtm.pcwtm-recommend #slidelist.recommend-slidelist,\nhtml.pcwtm.pcwtm-recommend [data-e2e=\"slideList\"],\nhtml.pcwtm.pcwtm-modal #slidelist,\nhtml.pcwtm.pcwtm-modal #slidelist.recommend-slidelist,\nhtml.pcwtm.pcwtm-modal [data-e2e=\"slideList\"] {\n  height: 100dvh !important;\n  min-height: 100dvh !important;\n}\n\nhtml.pcwtm #slidelist [data-e2e=\"feed-video\"]:not([data-e2e=\"feed-active-video\"]) {\n  content-visibility: auto;\n  contain-intrinsic-size: auto 100dvh;\n}\n\nhtml.pcwtm #slidelist .page-recommend-container,\nhtml.pcwtm #sliderVideo,\nhtml.pcwtm [data-e2e=\"feed-active-video\"],\nhtml.pcwtm [data-e2e=\"feed-video\"],\nhtml.pcwtm .sliderVideo,\nhtml.pcwtm .slider-video {\n  width: 100% !important;\n  max-width: 100% !important;\n  height: 100% !important;\n  min-height: 0 !important;\n  margin: 0 !important;\n  left: 0 !important;\n  right: 0 !important;\n}\n\nhtml.pcwtm #sliderVideo .playerContainer,\nhtml.pcwtm [data-e2e=\"feed-active-video\"] .playerContainer,\nhtml.pcwtm [data-e2e=\"feed-video\"] .playerContainer,\nhtml.pcwtm .basePlayerContainer,\nhtml.pcwtm .xgplayer,\nhtml.pcwtm [data-e2e=\"player-container\"] {\n  width: 100% !important;\n  max-width: 100% !important;\n  height: 100% !important;\n  left: 0 !important;\n}\n\nhtml.pcwtm .xgplayer video,\nhtml.pcwtm .basePlayerContainer video {\n  width: 100% !important;\n  height: 100% !important;\n  max-width: 100% !important;\n  object-fit: contain;\n}\n\n/* Official like / comment / favorite: keep host widgets, don't restyle as stickers */\nhtml.pcwtm .basePlayerContainer .positionBox,\nhtml.pcwtm [data-e2e=\"feed-active-video\"] .positionBox {\n  position: absolute !important;\n  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;\n  bottom: calc(80px + env(safe-area-inset-bottom)) !important;\n  left: auto !important;\n  transform: none !important;\n  z-index: 5;\n  background: transparent !important;\n  box-shadow: none !important;\n}\n\nhtml.pcwtm [data-e2e=\"feed-comment-icon\"],\nhtml.pcwtm [data-e2e=\"video-player-digg\"],\nhtml.pcwtm [data-e2e=\"video-player-collect\"],\nhtml.pcwtm [data-e2e=\"video-player-share\"] {\n  pointer-events: auto;\n  touch-action: manipulation;\n}\n\nhtml.pcwtm #video-info-wrap,\nhtml.pcwtm .video-info-detail,\nhtml.pcwtm [data-e2e=\"video-info\"] {\n  max-width: calc(100% - 72px) !important;\n  width: auto !important;\n  left: calc(var(--pcwtm-space) + env(safe-area-inset-left)) !important;\n  right: auto !important;\n  bottom: calc(16px + env(safe-area-inset-bottom)) !important;\n}\n\n/* Official up/down switchers: keep, tuck to the right edge */\nhtml.pcwtm [data-e2e=\"video-switch-next-arrow\"],\nhtml.pcwtm [data-e2e=\"video-switch-prev-arrow\"],\nhtml.pcwtm .xgplayer-playswitch {\n  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;\n  left: auto !important;\n}\n\n/* Bottom sheet only while html.pcwtm-comments (official side width > 0).\n * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay\n * in the DOM at width 0. :has() would keep this block applied. */\nhtml.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,\nhtml.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel {\n  position: fixed !important;\n  left: 0 !important;\n  right: 0 !important;\n  bottom: 0 !important;\n  top: auto !important;\n  width: 100% !important;\n  max-width: 100% !important;\n  height: var(--pcwtm-sheet) !important;\n  max-height: var(--pcwtm-sheet) !important;\n  background: var(--pcwtm-elevated) !important;\n  border-top: 1px solid var(--pcwtm-border);\n  border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */\n  z-index: 10040 !important;\n  overflow: visible !important;\n  overscroll-behavior: contain;\n  padding: 0 0 env(safe-area-inset-bottom);\n  box-sizing: border-box !important;\n  pointer-events: auto;\n}\n\n/* Rail stays above the shorter sheet. Do not pointer-events:none the box\n * (that swallowed icon / \u300c\u8bc4\u8bba \u24e7\u300d taps). Hide like/fav/share only. */\nhtml.pcwtm.pcwtm-comments .positionBox [data-e2e=\"video-player-digg\"],\nhtml.pcwtm.pcwtm-comments .positionBox [data-e2e=\"video-player-collect\"],\nhtml.pcwtm.pcwtm-comments .positionBox [data-e2e=\"video-player-share\"] {\n  visibility: hidden !important;\n}\n\nhtml.pcwtm.pcwtm-comments .positionBox {\n  bottom: calc(var(--pcwtm-sheet) + 8px) !important;\n  z-index: 10050;\n  pointer-events: auto;\n}\n\nhtml.pcwtm.pcwtm-comments .positionBox [data-e2e=\"feed-comment-icon\"] {\n  visibility: visible !important;\n  pointer-events: auto !important;\n}\n\nhtml.pcwtm.pcwtm-comments .xgplayer-playswitch {\n  visibility: hidden !important;\n}\n\n/* Hamburger is not the comment close \u2014 park it top-left while the sheet is open */\nhtml.pcwtm.pcwtm-comments #pcwtm-menu-btn.pcwtm-float {\n  right: auto;\n  left: calc(8px + env(safe-area-inset-left));\n  top: calc(8px + env(safe-area-inset-top));\n  visibility: visible;\n  pointer-events: auto;\n}\n\n/* Official X only: 44\u00d744 on the host node. Center the glyph in the hit box.\n * No ::after overlay \u2014 that blocked the tab row. z-index above the tabs. */\nhtml.pcwtm .pcwtm-host-close {\n  box-sizing: border-box !important;\n  min-width: 44px !important;\n  min-height: 44px !important;\n  padding: 0 !important;\n  margin: 0 !important;\n  display: grid !important;\n  place-items: center !important;\n  pointer-events: auto !important;\n  touch-action: manipulation;\n  position: relative;\n  z-index: 6;\n  background: transparent !important;\n  border: 0 !important;\n  box-shadow: none !important;\n  -webkit-tap-highlight-color: transparent;\n}\n\nhtml.pcwtm .pcwtm-host-close svg {\n  width: 20px !important;\n  height: 20px !important;\n}\n\n/* Official sheet tabs: one 44px row, no wrap, no chips. Same sheet bg. */\nhtml.pcwtm.pcwtm-comments #videoSideCard [role=\"tablist\"],\nhtml.pcwtm.pcwtm-comments #videoSideBar [role=\"tablist\"],\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-tabs {\n  display: flex !important;\n  flex-wrap: nowrap !important;\n  align-items: stretch !important;\n  height: 44px !important;\n  min-height: 44px !important;\n  max-height: 44px !important;\n  overflow-x: auto !important;\n  overflow-y: hidden !important;\n  -webkit-overflow-scrolling: touch;\n  scrollbar-width: none;\n  background: var(--pcwtm-elevated) !important;\n  border: 0 !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n  padding-right: 48px;\n  box-sizing: border-box !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard [role=\"tablist\"]::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments #videoSideBar [role=\"tablist\"]::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-tabs::-webkit-scrollbar {\n  display: none;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard [role=\"tab\"],\nhtml.pcwtm.pcwtm-comments #videoSideBar [role=\"tab\"],\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > *:not(.semi-tabs-ink-bar) {\n  flex: 0 0 auto !important;\n  height: 44px !important;\n  line-height: 44px !important;\n  padding: 0 12px !important;\n  margin: 0 !important;\n  white-space: nowrap !important;\n  color: var(--pcwtm-muted) !important;\n  background: transparent !important;\n  border-radius: 0 !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard [role=\"tab\"][aria-selected=\"true\"],\nhtml.pcwtm.pcwtm-comments #videoSideBar [role=\"tab\"][aria-selected=\"true\"],\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab-active,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab-active,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > [aria-selected=\"true\"] {\n  color: var(--pcwtm-fg) !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-ink-bar,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-ink-bar {\n  background: var(--pcwtm-accent) !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs,\nhtml.pcwtm.pcwtm-comments #relatedVideoCard {\n  background: var(--pcwtm-elevated) !important;\n}\n\nhtml.pcwtm.pcwtm-comments #relatedVideoCard,\nhtml.pcwtm.pcwtm-comments #merge-all-comment-container,\nhtml.pcwtm.pcwtm-comments .comment-mainContent[data-e2e=\"comment-list\"],\nhtml.pcwtm.pcwtm-comments [data-e2e=\"comment-list\"] {\n  width: 100% !important;\n  max-width: 100% !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard #merge-all-comment-container,\nhtml.pcwtm.pcwtm-comments #videoSideBar #merge-all-comment-container,\nhtml.pcwtm.pcwtm-comments #videoSideCard [data-e2e=\"comment-list\"],\nhtml.pcwtm.pcwtm-comments #videoSideBar [data-e2e=\"comment-list\"] {\n  max-height: calc(var(--pcwtm-sheet) - 44px);\n  overflow-x: hidden;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  -webkit-overflow-scrolling: touch;\n}\n\nhtml.pcwtm [data-e2e=\"comment-item\"] {\n  max-width: 100% !important;\n}\n\n/* ---------- Video detail /video/:id ---------- */\n\nhtml.pcwtm [data-e2e=\"video-detail\"] {\n  display: flex !important;\n  flex-direction: column !important;\n  align-items: stretch !important;\n  min-height: calc(100dvh - var(--pcwtm-bar)) !important;\n  padding: 0 !important;\n  margin: 0 !important;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] > * {\n  width: 100% !important;\n  max-width: 100% !important;\n  box-sizing: border-box !important;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer {\n  width: 100% !important;\n  max-width: 100% !important;\n  display: flex !important;\n  flex-direction: column !important;\n  padding: 0 !important;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > [data-e2e=\"player-container\"] {\n  order: 1;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > *:has([data-e2e=\"detail-video-info\"]) {\n  order: 2;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > *:has([data-e2e=\"comment-list\"]) {\n  order: 3;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > *:has([data-e2e=\"related-video\"]) {\n  order: 4;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] [data-e2e=\"player-container\"],\nhtml.pcwtm [data-e2e=\"video-detail\"] .video-detail-container,\nhtml.pcwtm [data-e2e=\"video-detail\"] .basePlayerContainer,\nhtml.pcwtm [data-e2e=\"video-detail\"] .xgplayer {\n  width: 100% !important;\n  max-width: 100% !important;\n  height: auto !important;\n  min-height: 56vw !important;\n  aspect-ratio: 9 / 16;\n  max-height: 70dvh !important;\n  background: var(--pcwtm-bg);\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > div:has(.comment-mainContent[data-e2e=\"comment-list\"]),\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > div > div:has(.comment-mainContent[data-e2e=\"comment-list\"]),\nhtml.pcwtm [data-e2e=\"video-detail\"] #comment-input-container,\nhtml.pcwtm [data-e2e=\"video-detail\"] [data-e2e=\"comment-list\"] {\n  position: relative !important;\n  width: 100% !important;\n  max-width: 100% !important;\n  height: auto !important;\n  min-height: 40vh !important;\n  left: auto !important;\n  right: auto !important;\n  top: auto !important;\n  bottom: auto !important;\n}\n\nhtml.pcwtm [data-e2e=\"aweme-relate\"],\nhtml.pcwtm [data-e2e=\"related-video\"] {\n  width: 100% !important;\n  max-width: 100% !important;\n}\n\nhtml.pcwtm [data-e2e=\"comment-input\"],\nhtml.pcwtm textarea,\nhtml.pcwtm input[placeholder*=\"\u8bc4\u8bba\"] {\n  font-size: 16px !important;\n}\n\n/* ---------- \u7cbe\u9009 / jingxuan grid \u2192 single column ---------- */\n\nhtml.pcwtm .discover-tab-container,\nhtml.pcwtm .discover-tab-bar {\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n}\n\nhtml.pcwtm .discover-tab-bar {\n  display: flex !important;\n  flex-wrap: nowrap !important;\n  overflow-x: auto !important;\n  -webkit-overflow-scrolling: touch;\n  scrollbar-width: none;\n  touch-action: pan-x;\n}\n\nhtml.pcwtm .discover-tab-bar::-webkit-scrollbar {\n  display: none;\n}\n\nhtml.pcwtm .jingxuanFeedList,\nhtml.pcwtm .jingxuan-scroll-element {\n  display: flex !important;\n  flex-direction: column !important;\n  gap: var(--pcwtm-space) !important;\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n  padding: var(--pcwtm-space) var(--pcwtm-space) 72px !important;\n  box-sizing: border-box !important;\n  overflow-x: hidden !important;\n}\n\n/* Live grid is `.jingxuan-scroll-element > div` with hardcoded 314px 314px */\nhtml.pcwtm .jingxuan-scroll-element > div {\n  display: grid !important;\n  grid-template-columns: minmax(0, 1fr) !important;\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n  gap: var(--pcwtm-space) !important;\n}\n\nhtml.pcwtm .discover-video-card-item,\nhtml.pcwtm .discover-video-card-img,\nhtml.pcwtm .waterfall-videoCardContainer,\nhtml.pcwtm .jingxuanVideoCard {\n  width: 100% !important;\n  max-width: 100% !important;\n}\n\nhtml.pcwtm #douyin-right-container ul[data-e2e=\"scroll-list\"],\nhtml.pcwtm #search-result-container ul[data-e2e=\"scroll-list\"] {\n  display: flex !important;\n  flex-direction: column !important;\n  gap: var(--pcwtm-space) !important;\n  width: 100% !important;\n  padding: var(--pcwtm-space) var(--pcwtm-space) 72px !important;\n  box-sizing: border-box !important;\n}\n\nhtml.pcwtm #douyin-right-container ul[data-e2e=\"scroll-list\"] > li,\nhtml.pcwtm #search-result-container ul[data-e2e=\"scroll-list\"] > li,\nhtml.pcwtm .search-result-card {\n  width: 100% !important;\n  max-width: 100% !important;\n}\n\n/* modal_id overlay player (jingxuan tap \u2192 swipe) */\nhtml.pcwtm.pcwtm-modal #slidelist,\nhtml.pcwtm [class*=\"isCssFullScreen\"] #slidelist,\nhtml.pcwtm #slidelist[class*=\"isCssFullScreen\"] {\n  height: 100dvh !important;\n}\n\n/* ---------- Hide download / get-app chrome, keep login ---------- */\n\nhtml.pcwtm a[href*=\"apps.apple.com\"],\nhtml.pcwtm a[href*=\"itunes.apple.com\"],\nhtml.pcwtm [class*=\"get_app\"],\nhtml.pcwtm [class*=\"get-app\"],\nhtml.pcwtm .pcwtm-hide-promo,\nhtml.pcwtm #videoSideCard [class*=\"everyone-search\"],\nhtml.pcwtm #videoSideBar [class*=\"everyone-search\"],\nhtml.pcwtm #videoSideCard [class*=\"EveryoneSearch\"],\nhtml.pcwtm #videoSideBar [class*=\"EveryoneSearch\"] {\n  display: none !important;\n  content-visibility: hidden;\n}\n\n/* Outer shells already fit ~500. Do not keep unlocking #login-panel-new.\n * Clip leftover overflow until the inner article shrinks. */\nhtml.pcwtm #login-panel-new,\nhtml.pcwtm #douyin-login-new-id {\n  overflow-x: hidden;\n  z-index: 10120;\n}\n\n/* Inner desktop two-column (QA: 726) is the overflow. Stack / drop QR. */\nhtml.pcwtm article#douyin_login_comp_flat_panel,\nhtml.pcwtm article#douyin_login_comp_flat_panel > *,\nhtml.pcwtm article#douyin_login_comp_flat_panel > * > * {\n  min-width: 0 !important;\n  max-width: 100% !important;\n  box-sizing: border-box !important;\n}\n\nhtml.pcwtm article#douyin_login_comp_flat_panel {\n  width: 100% !important;\n  max-width: 100vw !important;\n  display: flex !important;\n  flex-direction: column !important;\n  flex-wrap: nowrap !important;\n  overflow-x: hidden !important;\n}\n\nhtml.pcwtm #douyin_login_comp_scan_code {\n  display: none !important;\n}\n\nhtml.pcwtm article#douyin_login_comp_flat_panel #douyin_login_comp_single_panel,\nhtml.pcwtm #douyin_login_comp_single_panel {\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n}\n\nhtml.pcwtm [role=\"dialog\"],\nhtml.pcwtm .semi-modal,\nhtml.pcwtm #login-pannel,\nhtml.pcwtm [data-e2e=\"recommend-guide-mask\"],\nhtml.pcwtm #douyin-web-recommend-guide-mask {\n  max-width: 100vw !important;\n  min-width: 0 !important;\n}\n\n/* ---------- Search / profile: global min-width only ---------- */\n\nhtml.pcwtm #search-content-area,\nhtml.pcwtm #search-content-area > div,\nhtml.pcwtm #search-result-container {\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n}\n\n/* WAF / logged-out challenge shell: just unlock width */\nhtml.pcwtm body:has(script[src*=\"waf-jschallenge\"]) {\n  min-width: 0 !important;\n}\n";
+  window.__PCWTM_CSS__ = "/* PCWebToMobile \u00b7 douyin\n * Applied under html.pcwtm (userscript) or @media (max-width: 920px) (Stylus).\n * Layout only \u2014 keep Douyin's own DOM, player, actions, and comments.\n *\n * Tokens once, under html.pcwtm: near-black video + quiet gray + Douyin's red.\n * Overlay chrome is thin; unused PC rails stay in the DOM (drawer reads them)\n * but are hidden with display / content-visibility, not JS loops.\n *\n * Selectors verified on the official PC shell (2026-08-20, logged-out):\n *   #root #douyin-header #douyin-header-menuCt\n *   #douyin-navigation / [data-e2e=\"douyin-navigation\"]\n *   #douyin-sidebar #douyin-sidebar-new #douyin-right-container\n *   Recommend swipe (/?recommend=1): #slidelist.recommend-slidelist #sliderVideo\n *     [data-e2e=\"feed-active-video\"|\"slideList\"|\"feed-video\"|\"feed-comment-icon\"]\n *     .page-recommend-container .sliderVideo .playerContainer .basePlayerContainer\n *     .xgplayer .positionBox #video-info-wrap\n *   Comments on feed: #videoSideCard (visible) #videoSideBar (often width 0)\n *     #relatedVideoCard #merge-all-comment-container [data-e2e=\"comment-list\"]\n *   /video/:id: [data-e2e=\"video-detail\"|\"player-container\"] .leftContainer\n *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar\n * Hashed class names (e.g. .eRu21rp0) are avoided \u2014 they rotate.\n * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.\n * JS marks the in-view aweme with .pcwtm-active-aweme after /video/:id scroll.\n * JS adds html.pcwtm-comments only when a #videoSideCard / #videoSideBar official\n * width is > 0 (live: closed=0, open\u2248391). querySelectorAll \u2014 not getElementById \u2014\n * so a later card's panel is not skipped. :has(comment-list) stays true after\n * official close \u2014 do not use it as the open signal.\n * JS may mark the official close node with .pcwtm-host-close (host node only).\n * Recommend door is /?recommend=1&from_nav=1 (bare ?recommend=1 bounces to jingxuan).\n * Login wall (QA 500px, 2026-08-20): #login-panel-new is already 500.\n * Overflow is article#douyin_login_comp_flat_panel (726, QR + phone).\n * Left #douyin_login_comp_scan_code / right #douyin_login_comp_single_panel.\n * Official X sits on the right column (~x=667) \u2014 keep it in-viewport.\n */\n\nhtml.pcwtm {\n  --pcwtm-bg: #000;\n  --pcwtm-elevated: #161616;\n  --pcwtm-fg: #ececec;\n  --pcwtm-muted: #8a8a8a;\n  --pcwtm-accent: #fe2c55;\n  --pcwtm-border: rgba(236, 236, 236, 0.12);\n  --pcwtm-space: 8px;\n  --pcwtm-radius: 8px;\n  --pcwtm-bar: 48px;\n  --pcwtm-sheet: min(52dvh, 420px);\n  --header-height: var(--pcwtm-bar);\n  color-scheme: dark;\n}\n\nhtml.pcwtm,\nhtml.pcwtm body {\n  min-width: 0 !important;\n  max-width: 100% !important;\n  width: 100% !important;\n  overflow-x: hidden !important;\n  background: var(--pcwtm-bg);\n}\n\nhtml.pcwtm body {\n  padding-left: env(safe-area-inset-left);\n  padding-right: env(safe-area-inset-right);\n}\n\nhtml.pcwtm.pcwtm-recommend body,\nhtml.pcwtm.pcwtm-modal body {\n  padding-left: 0;\n  padding-right: 0;\n}\n\n/* Shells that lock a desktop min-width (~580px+ was observed at 390 CSS px) */\nhtml.pcwtm #root,\nhtml.pcwtm #root > div,\nhtml.pcwtm #douyin-right-container,\nhtml.pcwtm #douyin-header,\nhtml.pcwtm #slidelist,\nhtml.pcwtm #sliderVideo,\nhtml.pcwtm .parent-route-container,\nhtml.pcwtm .route-scroll-container,\nhtml.pcwtm .page-recommend-container,\nhtml.pcwtm .playerContainer,\nhtml.pcwtm .basePlayerContainer,\nhtml.pcwtm .leftContainer,\nhtml.pcwtm [data-e2e=\"video-detail\"],\nhtml.pcwtm [data-e2e=\"slideList\"],\nhtml.pcwtm [data-e2e=\"player-container\"] {\n  min-width: 0 !important;\n  max-width: 100% !important;\n  width: 100% !important;\n  box-sizing: border-box !important;\n}\n\n/* ---------- Unused PC columns: hide in CSS, keep in DOM ---------- */\n\nhtml.pcwtm #douyin-navigation,\nhtml.pcwtm [data-e2e=\"douyin-navigation\"],\nhtml.pcwtm #douyin-sidebar,\nhtml.pcwtm #douyin-sidebar-new,\nhtml.pcwtm img#douyin-temp-sidebar {\n  display: none !important;\n  content-visibility: hidden;\n  contain: strict;\n}\n\n/* ---------- Header (search stays; feed hides this for full-bleed) ---------- */\n\nhtml.pcwtm #douyin-header {\n  position: fixed !important;\n  top: env(safe-area-inset-top) !important;\n  left: 0 !important;\n  right: 0 !important;\n  height: var(--pcwtm-bar) !important;\n  min-height: var(--pcwtm-bar) !important;\n  max-height: var(--pcwtm-bar) !important;\n  margin: 0 !important;\n  padding: 0 56px 0 var(--pcwtm-space) !important;\n  z-index: 10050 !important;\n  display: flex !important;\n  align-items: center !important;\n  gap: var(--pcwtm-space) !important;\n  background: var(--pcwtm-elevated) !important;\n  border-bottom: 1px solid var(--pcwtm-border);\n  color: var(--pcwtm-fg);\n}\n\nhtml.pcwtm.pcwtm-recommend #douyin-header,\nhtml.pcwtm.pcwtm-modal #douyin-header,\nhtml.pcwtm.pcwtm-comments #douyin-header {\n  display: none !important;\n  content-visibility: hidden;\n}\n\nhtml.pcwtm.pcwtm-recommend.pcwtm-searching:not(.pcwtm-comments) #douyin-header,\nhtml.pcwtm.pcwtm-modal.pcwtm-searching:not(.pcwtm-comments) #douyin-header {\n  display: flex !important;\n  content-visibility: visible;\n}\n\nhtml.pcwtm #douyin-header > div,\nhtml.pcwtm #douyin-header > div[data-click=\"doubleClick\"] {\n  min-width: 0 !important;\n  max-width: 100% !important;\n  width: 100% !important;\n  flex: 1 1 auto !important;\n}\n\nhtml.pcwtm #douyin-header input[data-e2e=\"searchbar-input\"],\nhtml.pcwtm #douyin-header input[type=\"search\"],\nhtml.pcwtm #douyin-header input[type=\"text\"] {\n  font-size: 16px !important; /* iOS no-zoom */\n  min-width: 0 !important;\n}\n\nhtml.pcwtm #douyin-header-menuCt {\n  flex: 0 0 auto !important;\n  max-width: none !important;\n  overflow: visible !important;\n}\n\nhtml.pcwtm #douyin-header [data-e2e=\"notice-entry\"],\nhtml.pcwtm #douyin-header [data-e2e=\"im-entry\"],\nhtml.pcwtm #douyin-header [data-e2e=\"something-button\"] {\n  display: none !important;\n  content-visibility: hidden;\n}\n\nhtml.pcwtm #douyin-header [id^=\"douyin-header-menu\"] {\n  flex: 0 0 auto !important;\n}\n\n/* ---------- Overlay chrome ---------- */\n\nhtml.pcwtm #pcwtm-menu-btn {\n  box-sizing: border-box;\n  width: 44px;\n  height: 44px;\n  padding: 0;\n  margin: 0;\n  border: 1px solid var(--pcwtm-border);\n  border-radius: var(--pcwtm-radius);\n  background: var(--pcwtm-elevated);\n  color: var(--pcwtm-fg);\n  display: grid;\n  place-items: center;\n  cursor: pointer;\n  touch-action: manipulation;\n  -webkit-tap-highlight-color: transparent;\n}\n\nhtml.pcwtm #pcwtm-menu-btn.pcwtm-float {\n  position: fixed;\n  top: calc(var(--pcwtm-space) + env(safe-area-inset-top));\n  right: calc(var(--pcwtm-space) + env(safe-area-inset-right));\n  z-index: 10080;\n}\n\nhtml.pcwtm #pcwtm-menu-btn:active {\n  transform: scale(0.96);\n}\n\nhtml.pcwtm #pcwtm-mask {\n  position: fixed;\n  inset: 0;\n  z-index: 10060;\n  background: rgba(0, 0, 0, 0.46);\n  opacity: 0;\n  pointer-events: none;\n  transition: opacity 180ms ease;\n  contain: strict;\n  touch-action: manipulation;\n}\n\nhtml.pcwtm.pcwtm-open #pcwtm-mask {\n  opacity: 1;\n  pointer-events: auto;\n}\n\nhtml.pcwtm #pcwtm-drawer {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  width: min(80vw, 320px);\n  z-index: 10070;\n  box-sizing: border-box;\n  background: var(--pcwtm-elevated);\n  color: var(--pcwtm-fg);\n  border-left: 1px solid var(--pcwtm-border);\n  border-radius: 24px 0 0 24px; /* inner 8 + padding 16 */\n  transform: translateX(105%);\n  transition: transform 200ms ease;\n  overflow-x: hidden;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  padding: calc(16px + env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));\n  -webkit-overflow-scrolling: touch;\n  contain: layout paint style;\n  touch-action: manipulation;\n}\n\nhtml.pcwtm.pcwtm-open #pcwtm-drawer {\n  transform: translateX(0);\n}\n\nhtml.pcwtm #pcwtm-drawer a,\nhtml.pcwtm #pcwtm-drawer button {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  box-sizing: border-box;\n  gap: var(--pcwtm-space);\n  margin: 0 0 var(--pcwtm-space);\n  padding: 12px 16px;\n  border: 0;\n  border-radius: var(--pcwtm-radius);\n  background: transparent;\n  color: var(--pcwtm-fg);\n  text-align: left;\n  text-decoration: none;\n  font: inherit;\n  font-size: 15px;\n  line-height: 1.2;\n  cursor: pointer;\n  touch-action: manipulation;\n  -webkit-tap-highlight-color: transparent;\n}\n\nhtml.pcwtm #pcwtm-drawer a:active,\nhtml.pcwtm #pcwtm-drawer button:active {\n  background: rgba(236, 236, 236, 0.06);\n}\n\nhtml.pcwtm #pcwtm-drawer a[aria-current=\"page\"] {\n  color: var(--pcwtm-accent);\n}\n\n@media (prefers-reduced-motion: reduce) {\n  html.pcwtm #pcwtm-mask,\n  html.pcwtm #pcwtm-drawer,\n  html.pcwtm #pcwtm-menu-btn {\n    transition: none;\n  }\n\n  html.pcwtm #pcwtm-menu-btn:active {\n    transform: none;\n  }\n}\n\n/* ---------- Homepage recommend slider (/?recommend=1) ---------- */\n\nhtml.pcwtm #douyin-right-container {\n  margin: 0 !important;\n  padding: 0 !important;\n  padding-top: var(--pcwtm-bar) !important;\n  left: 0 !important;\n}\n\nhtml.pcwtm.pcwtm-recommend #douyin-right-container,\nhtml.pcwtm.pcwtm-modal #douyin-right-container {\n  padding-top: 0 !important;\n}\n\nhtml.pcwtm #slidelist,\nhtml.pcwtm #slidelist.recommend-slidelist,\nhtml.pcwtm [data-e2e=\"slideList\"] {\n  width: 100% !important;\n  height: calc(100dvh - var(--pcwtm-bar)) !important;\n  min-height: calc(100dvh - var(--pcwtm-bar)) !important;\n  margin: 0 !important;\n  padding: 0 !important;\n  padding-right: 0 !important;\n  left: 0 !important;\n}\n\nhtml.pcwtm.pcwtm-recommend #slidelist,\nhtml.pcwtm.pcwtm-recommend #slidelist.recommend-slidelist,\nhtml.pcwtm.pcwtm-recommend [data-e2e=\"slideList\"],\nhtml.pcwtm.pcwtm-modal #slidelist,\nhtml.pcwtm.pcwtm-modal #slidelist.recommend-slidelist,\nhtml.pcwtm.pcwtm-modal [data-e2e=\"slideList\"] {\n  height: 100dvh !important;\n  min-height: 100dvh !important;\n}\n\nhtml.pcwtm #slidelist [data-e2e=\"feed-video\"]:not([data-e2e=\"feed-active-video\"]),\nhtml.pcwtm [data-e2e=\"slideList\"] [data-e2e=\"feed-video\"]:not([data-e2e=\"feed-active-video\"]) {\n  content-visibility: auto;\n  contain-intrinsic-size: auto 100dvh;\n}\n\nhtml.pcwtm #slidelist .page-recommend-container,\nhtml.pcwtm #sliderVideo,\nhtml.pcwtm [data-e2e=\"feed-active-video\"],\nhtml.pcwtm [data-e2e=\"feed-video\"],\nhtml.pcwtm .sliderVideo,\nhtml.pcwtm .slider-video {\n  width: 100% !important;\n  max-width: 100% !important;\n  height: 100% !important;\n  min-height: 0 !important;\n  margin: 0 !important;\n  left: 0 !important;\n  right: 0 !important;\n}\n\nhtml.pcwtm #sliderVideo .playerContainer,\nhtml.pcwtm [data-e2e=\"feed-active-video\"] .playerContainer,\nhtml.pcwtm [data-e2e=\"feed-video\"] .playerContainer,\nhtml.pcwtm .basePlayerContainer,\nhtml.pcwtm .xgplayer,\nhtml.pcwtm [data-e2e=\"player-container\"] {\n  width: 100% !important;\n  max-width: 100% !important;\n  height: 100% !important;\n  left: 0 !important;\n}\n\nhtml.pcwtm .xgplayer video,\nhtml.pcwtm .basePlayerContainer video {\n  width: 100% !important;\n  height: 100% !important;\n  max-width: 100% !important;\n  object-fit: contain;\n}\n\n/* Official like / comment / favorite: keep host widgets, don't restyle as stickers */\nhtml.pcwtm .basePlayerContainer .positionBox,\nhtml.pcwtm [data-e2e=\"feed-active-video\"] .positionBox {\n  position: absolute !important;\n  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;\n  bottom: calc(80px + env(safe-area-inset-bottom)) !important;\n  left: auto !important;\n  transform: none !important;\n  z-index: 5;\n  background: transparent !important;\n  box-shadow: none !important;\n}\n\nhtml.pcwtm [data-e2e=\"feed-comment-icon\"],\nhtml.pcwtm [data-e2e=\"video-player-digg\"],\nhtml.pcwtm [data-e2e=\"video-player-collect\"],\nhtml.pcwtm [data-e2e=\"video-player-share\"] {\n  pointer-events: auto;\n  touch-action: manipulation;\n}\n\nhtml.pcwtm #video-info-wrap,\nhtml.pcwtm .video-info-detail,\nhtml.pcwtm [data-e2e=\"video-info\"] {\n  max-width: calc(100% - 72px) !important;\n  width: auto !important;\n  left: calc(var(--pcwtm-space) + env(safe-area-inset-left)) !important;\n  right: auto !important;\n  bottom: calc(16px + env(safe-area-inset-bottom)) !important;\n}\n\n/* Official up/down switchers: keep, tuck to the right edge */\nhtml.pcwtm [data-e2e=\"video-switch-next-arrow\"],\nhtml.pcwtm [data-e2e=\"video-switch-prev-arrow\"],\nhtml.pcwtm .xgplayer-playswitch {\n  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;\n  left: auto !important;\n}\n\n/* Bottom sheet only while html.pcwtm-comments (official side width > 0).\n * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay\n * in the DOM at width 0. :has() would keep this block applied. */\nhtml.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,\nhtml.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel {\n  position: fixed !important;\n  left: 0 !important;\n  right: 0 !important;\n  bottom: 0 !important;\n  top: auto !important;\n  width: 100% !important;\n  max-width: 100% !important;\n  height: var(--pcwtm-sheet) !important;\n  max-height: var(--pcwtm-sheet) !important;\n  background: var(--pcwtm-elevated) !important;\n  border-top: 1px solid var(--pcwtm-border);\n  border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */\n  z-index: 10040 !important;\n  overflow: visible !important;\n  overscroll-behavior: contain;\n  padding: 0 0 env(safe-area-inset-bottom);\n  box-sizing: border-box !important;\n  pointer-events: auto;\n}\n\n/* Rail stays above the shorter sheet. Do not pointer-events:none the box\n * (that swallowed icon / \u300c\u8bc4\u8bba \u24e7\u300d taps). Hide like/fav/share only. */\nhtml.pcwtm.pcwtm-comments .positionBox [data-e2e=\"video-player-digg\"],\nhtml.pcwtm.pcwtm-comments .positionBox [data-e2e=\"video-player-collect\"],\nhtml.pcwtm.pcwtm-comments .positionBox [data-e2e=\"video-player-share\"] {\n  visibility: hidden !important;\n}\n\nhtml.pcwtm.pcwtm-comments .positionBox {\n  bottom: calc(var(--pcwtm-sheet) + 8px) !important;\n  z-index: 10050;\n  pointer-events: auto;\n}\n\nhtml.pcwtm.pcwtm-comments .positionBox [data-e2e=\"feed-comment-icon\"] {\n  visibility: visible !important;\n  pointer-events: auto !important;\n}\n\nhtml.pcwtm.pcwtm-comments .xgplayer-playswitch {\n  visibility: hidden !important;\n}\n\n/* Hamburger is not the comment close \u2014 park it top-left while the sheet is open */\nhtml.pcwtm.pcwtm-comments #pcwtm-menu-btn.pcwtm-float {\n  right: auto;\n  left: calc(8px + env(safe-area-inset-left));\n  top: calc(8px + env(safe-area-inset-top));\n  visibility: visible;\n  pointer-events: auto;\n}\n\n/* Official X only: 44\u00d744 on the host node. Center the glyph in the hit box.\n * No ::after overlay \u2014 that blocked the tab row. z-index above the tabs. */\nhtml.pcwtm .pcwtm-host-close {\n  box-sizing: border-box !important;\n  min-width: 44px !important;\n  min-height: 44px !important;\n  padding: 0 !important;\n  margin: 0 !important;\n  display: grid !important;\n  place-items: center !important;\n  pointer-events: auto !important;\n  touch-action: manipulation;\n  position: relative;\n  z-index: 6;\n  background: transparent !important;\n  border: 0 !important;\n  box-shadow: none !important;\n  -webkit-tap-highlight-color: transparent;\n}\n\nhtml.pcwtm .pcwtm-host-close svg {\n  width: 20px !important;\n  height: 20px !important;\n}\n\n/* Official sheet tabs: one 44px row, no wrap, no chips. Same sheet bg. */\nhtml.pcwtm.pcwtm-comments #videoSideCard [role=\"tablist\"],\nhtml.pcwtm.pcwtm-comments #videoSideBar [role=\"tablist\"],\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel [role=\"tablist\"],\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-bar,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-tabs {\n  display: flex !important;\n  flex-wrap: nowrap !important;\n  align-items: stretch !important;\n  height: 44px !important;\n  min-height: 44px !important;\n  max-height: 44px !important;\n  overflow-x: auto !important;\n  overflow-y: hidden !important;\n  -webkit-overflow-scrolling: touch;\n  scrollbar-width: none;\n  background: var(--pcwtm-elevated) !important;\n  border: 0 !important;\n  border-radius: 0 !important;\n  box-shadow: none !important;\n  padding-right: 48px;\n  box-sizing: border-box !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard [role=\"tablist\"]::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments #videoSideBar [role=\"tablist\"]::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel [role=\"tablist\"]::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-bar::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-bar::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-bar::-webkit-scrollbar,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-tabs::-webkit-scrollbar {\n  display: none;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard [role=\"tab\"],\nhtml.pcwtm.pcwtm-comments #videoSideBar [role=\"tab\"],\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel [role=\"tab\"],\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-tab,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > *:not(.semi-tabs-ink-bar) {\n  flex: 0 0 auto !important;\n  height: 44px !important;\n  line-height: 44px !important;\n  padding: 0 12px !important;\n  margin: 0 !important;\n  white-space: nowrap !important;\n  color: var(--pcwtm-muted) !important;\n  background: transparent !important;\n  border-radius: 0 !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard [role=\"tab\"][aria-selected=\"true\"],\nhtml.pcwtm.pcwtm-comments #videoSideBar [role=\"tab\"][aria-selected=\"true\"],\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel [role=\"tab\"][aria-selected=\"true\"],\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-tab-active,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-tab-active,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-tab-active,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-tabs > [aria-selected=\"true\"] {\n  color: var(--pcwtm-fg) !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs-ink-bar,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs-ink-bar,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs-ink-bar {\n  background: var(--pcwtm-accent) !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard .semi-tabs,\nhtml.pcwtm.pcwtm-comments #videoSideBar .semi-tabs,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel .semi-tabs,\nhtml.pcwtm.pcwtm-comments #relatedVideoCard {\n  background: var(--pcwtm-elevated) !important;\n}\n\nhtml.pcwtm.pcwtm-comments #relatedVideoCard,\nhtml.pcwtm.pcwtm-comments #merge-all-comment-container,\nhtml.pcwtm.pcwtm-comments .comment-mainContent[data-e2e=\"comment-list\"],\nhtml.pcwtm.pcwtm-comments [data-e2e=\"comment-list\"] {\n  width: 100% !important;\n  max-width: 100% !important;\n}\n\nhtml.pcwtm.pcwtm-comments #videoSideCard #merge-all-comment-container,\nhtml.pcwtm.pcwtm-comments #videoSideBar #merge-all-comment-container,\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel #merge-all-comment-container,\nhtml.pcwtm.pcwtm-comments #videoSideCard [data-e2e=\"comment-list\"],\nhtml.pcwtm.pcwtm-comments #videoSideBar [data-e2e=\"comment-list\"],\nhtml.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e=\"comment-list\"] {\n  max-height: calc(var(--pcwtm-sheet) - 44px);\n  overflow-x: hidden;\n  overflow-y: auto;\n  overscroll-behavior: contain;\n  -webkit-overflow-scrolling: touch;\n}\n\nhtml.pcwtm [data-e2e=\"comment-item\"] {\n  max-width: 100% !important;\n}\n\n/* ---------- Video detail /video/:id ---------- */\n\nhtml.pcwtm [data-e2e=\"video-detail\"] {\n  display: flex !important;\n  flex-direction: column !important;\n  align-items: stretch !important;\n  min-height: calc(100dvh - var(--pcwtm-bar)) !important;\n  padding: 0 !important;\n  margin: 0 !important;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] > * {\n  width: 100% !important;\n  max-width: 100% !important;\n  box-sizing: border-box !important;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer {\n  width: 100% !important;\n  max-width: 100% !important;\n  display: flex !important;\n  flex-direction: column !important;\n  padding: 0 !important;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > [data-e2e=\"player-container\"] {\n  order: 1;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > *:has([data-e2e=\"detail-video-info\"]) {\n  order: 2;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > *:has([data-e2e=\"comment-list\"]) {\n  order: 3;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > *:has([data-e2e=\"related-video\"]) {\n  order: 4;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] [data-e2e=\"player-container\"],\nhtml.pcwtm [data-e2e=\"video-detail\"] .video-detail-container,\nhtml.pcwtm [data-e2e=\"video-detail\"] .basePlayerContainer,\nhtml.pcwtm [data-e2e=\"video-detail\"] .xgplayer {\n  width: 100% !important;\n  max-width: 100% !important;\n  height: auto !important;\n  min-height: 56vw !important;\n  aspect-ratio: 9 / 16;\n  max-height: 70dvh !important;\n  background: var(--pcwtm-bg);\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"]:not(.pcwtm-active-aweme):has(~ [data-e2e=\"video-detail\"]),\nhtml.pcwtm [data-e2e=\"video-detail\"] ~ [data-e2e=\"video-detail\"]:not(.pcwtm-active-aweme) {\n  content-visibility: auto;\n  contain-intrinsic-size: auto 100dvh;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"].pcwtm-active-aweme {\n  content-visibility: visible;\n}\n\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > div:has(.comment-mainContent[data-e2e=\"comment-list\"]),\nhtml.pcwtm [data-e2e=\"video-detail\"] .leftContainer > div > div:has(.comment-mainContent[data-e2e=\"comment-list\"]),\nhtml.pcwtm [data-e2e=\"video-detail\"] #comment-input-container,\nhtml.pcwtm [data-e2e=\"video-detail\"] [data-e2e=\"comment-list\"],\nhtml.pcwtm [data-e2e=\"video-detail\"].pcwtm-active-aweme [data-e2e=\"comment-list\"] {\n  position: relative !important;\n  width: 100% !important;\n  max-width: 100% !important;\n  height: auto !important;\n  min-height: 40vh !important;\n  left: auto !important;\n  right: auto !important;\n  top: auto !important;\n  bottom: auto !important;\n}\n\nhtml.pcwtm [data-e2e=\"aweme-relate\"],\nhtml.pcwtm [data-e2e=\"related-video\"] {\n  width: 100% !important;\n  max-width: 100% !important;\n}\n\nhtml.pcwtm [data-e2e=\"comment-input\"],\nhtml.pcwtm textarea,\nhtml.pcwtm input[placeholder*=\"\u8bc4\u8bba\"] {\n  font-size: 16px !important;\n}\n\n/* ---------- \u7cbe\u9009 / jingxuan grid \u2192 single column ---------- */\n\nhtml.pcwtm .discover-tab-container,\nhtml.pcwtm .discover-tab-bar {\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n}\n\nhtml.pcwtm .discover-tab-bar {\n  display: flex !important;\n  flex-wrap: nowrap !important;\n  overflow-x: auto !important;\n  -webkit-overflow-scrolling: touch;\n  scrollbar-width: none;\n  touch-action: pan-x;\n}\n\nhtml.pcwtm .discover-tab-bar::-webkit-scrollbar {\n  display: none;\n}\n\nhtml.pcwtm .jingxuanFeedList,\nhtml.pcwtm .jingxuan-scroll-element {\n  display: flex !important;\n  flex-direction: column !important;\n  gap: var(--pcwtm-space) !important;\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n  padding: var(--pcwtm-space) var(--pcwtm-space) 72px !important;\n  box-sizing: border-box !important;\n  overflow-x: hidden !important;\n}\n\n/* Live grid is `.jingxuan-scroll-element > div` with hardcoded 314px 314px */\nhtml.pcwtm .jingxuan-scroll-element > div {\n  display: grid !important;\n  grid-template-columns: minmax(0, 1fr) !important;\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n  gap: var(--pcwtm-space) !important;\n}\n\nhtml.pcwtm .discover-video-card-item,\nhtml.pcwtm .discover-video-card-img,\nhtml.pcwtm .waterfall-videoCardContainer,\nhtml.pcwtm .jingxuanVideoCard {\n  width: 100% !important;\n  max-width: 100% !important;\n}\n\nhtml.pcwtm #douyin-right-container ul[data-e2e=\"scroll-list\"],\nhtml.pcwtm #search-result-container ul[data-e2e=\"scroll-list\"] {\n  display: flex !important;\n  flex-direction: column !important;\n  gap: var(--pcwtm-space) !important;\n  width: 100% !important;\n  padding: var(--pcwtm-space) var(--pcwtm-space) 72px !important;\n  box-sizing: border-box !important;\n}\n\nhtml.pcwtm #douyin-right-container ul[data-e2e=\"scroll-list\"] > li,\nhtml.pcwtm #search-result-container ul[data-e2e=\"scroll-list\"] > li,\nhtml.pcwtm .search-result-card {\n  width: 100% !important;\n  max-width: 100% !important;\n}\n\n/* modal_id overlay player (jingxuan tap \u2192 swipe) */\nhtml.pcwtm.pcwtm-modal #slidelist,\nhtml.pcwtm [class*=\"isCssFullScreen\"] #slidelist,\nhtml.pcwtm #slidelist[class*=\"isCssFullScreen\"] {\n  height: 100dvh !important;\n}\n\n/* ---------- Hide download / get-app chrome, keep login ---------- */\n\nhtml.pcwtm a[href*=\"apps.apple.com\"],\nhtml.pcwtm a[href*=\"itunes.apple.com\"],\nhtml.pcwtm a[href*=\"play.google.com\"],\nhtml.pcwtm a[href*=\"app.adjust.com\"],\nhtml.pcwtm [class*=\"get_app\"],\nhtml.pcwtm [class*=\"get-app\"],\nhtml.pcwtm [class*=\"getApp\"],\nhtml.pcwtm [class*=\"GetApp\"],\nhtml.pcwtm [class*=\"download-app\"],\nhtml.pcwtm [class*=\"DownloadApp\"],\nhtml.pcwtm [class*=\"open-in-app\"],\nhtml.pcwtm [class*=\"OpenInApp\"],\nhtml.pcwtm .pcwtm-hide-promo,\nhtml.pcwtm #videoSideCard [class*=\"everyone-search\"],\nhtml.pcwtm #videoSideBar [class*=\"everyone-search\"],\nhtml.pcwtm .pcwtm-sheet-panel [class*=\"everyone-search\"],\nhtml.pcwtm #videoSideCard [class*=\"EveryoneSearch\"],\nhtml.pcwtm #videoSideBar [class*=\"EveryoneSearch\"],\nhtml.pcwtm .pcwtm-sheet-panel [class*=\"EveryoneSearch\"] {\n  display: none !important;\n  content-visibility: hidden;\n}\n\n/* Outer shells already fit ~500. Do not keep unlocking #login-panel-new.\n * Clip leftover overflow until the inner article shrinks. */\nhtml.pcwtm #login-panel-new,\nhtml.pcwtm #douyin-login-new-id {\n  overflow-x: hidden;\n  z-index: 10120;\n}\n\n/* Inner desktop two-column (QA: 726) is the overflow. Stack / drop QR. */\nhtml.pcwtm article#douyin_login_comp_flat_panel,\nhtml.pcwtm article#douyin_login_comp_flat_panel > *,\nhtml.pcwtm article#douyin_login_comp_flat_panel > * > * {\n  min-width: 0 !important;\n  max-width: 100% !important;\n  box-sizing: border-box !important;\n}\n\nhtml.pcwtm article#douyin_login_comp_flat_panel {\n  width: 100% !important;\n  max-width: 100vw !important;\n  display: flex !important;\n  flex-direction: column !important;\n  flex-wrap: nowrap !important;\n  overflow-x: hidden !important;\n}\n\nhtml.pcwtm #douyin_login_comp_scan_code {\n  display: none !important;\n}\n\nhtml.pcwtm article#douyin_login_comp_flat_panel #douyin_login_comp_single_panel,\nhtml.pcwtm #douyin_login_comp_single_panel {\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n}\n\nhtml.pcwtm [role=\"dialog\"],\nhtml.pcwtm .semi-modal,\nhtml.pcwtm #login-pannel,\nhtml.pcwtm [data-e2e=\"recommend-guide-mask\"],\nhtml.pcwtm #douyin-web-recommend-guide-mask {\n  max-width: 100vw !important;\n  min-width: 0 !important;\n}\n\n/* ---------- Search / profile: global min-width only ---------- */\n\nhtml.pcwtm #search-content-area,\nhtml.pcwtm #search-content-area > div,\nhtml.pcwtm #search-result-container {\n  width: 100% !important;\n  max-width: 100% !important;\n  min-width: 0 !important;\n}\n\n/* WAF / logged-out challenge shell: just unlock width */\nhtml.pcwtm body:has(script[src*=\"waf-jschallenge\"]) {\n  min-width: 0 !important;\n}\n";
 
   // After first paint we do not observe document with subtree:true.
-  // Watch #slidelist / #douyin-header (childList only), plus popstate,
-  // same-origin clicks, and a 2s interval. Coalesce with one rAF.
-  // collectLinks runs only when the drawer opens (textContent, never innerText).
+  // Watch the smallest live roots (childList only, plus style/class on
+  // comment side panels). Coalesce with one rAF. collectLinks runs only
+  // when the drawer opens (textContent, never innerText).
 
   var STYLE_ID = "pcwtm-douyin-css";
   var WIDTH_MAX = 920;
@@ -52,6 +52,7 @@
   var detailTrapLive = false;
   var detailTrapFor = "";
   var detailTrapPushes = 0;
+  var lastAwemeKey = "";
 
   function store(key, value) {
     try {
@@ -399,6 +400,7 @@
       setTimeout(recoverVideoBack, 0);
       setTimeout(recoverVideoBack, 300);
       if (isVideoPath()) setTimeout(armDetailBackTrap, 0);
+      onNavigate();
       return ret;
     };
     history.replaceState = function (state, title, url) {
@@ -410,6 +412,7 @@
         detailTrapLive = false;
         setTimeout(armDetailBackTrap, 0);
       }
+      onNavigate();
       return ret;
     };
     try {
@@ -478,6 +481,7 @@
     root.classList.toggle("pcwtm-video", video);
     root.classList.toggle("pcwtm-modal", modal);
     if (video || isDetailPage()) rememberVideoPage();
+    markActiveAweme();
   }
 
   function syncMode() {
@@ -495,22 +499,116 @@
 
   var HOST_CLOSE_CLASS = "pcwtm-host-close";
 
+  function visibleArea(el) {
+    if (!el || !el.getBoundingClientRect) return 0;
+    var r = el.getBoundingClientRect();
+    var vh = window.innerHeight || 0;
+    var vw = window.innerWidth || 0;
+    var h = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+    var w = Math.min(r.right, vw) - Math.max(r.left, 0);
+    if (h <= 0 || w <= 0) return 0;
+    return h * w;
+  }
+
+  function activeVideoRoot() {
+    var active = document.querySelector("[data-e2e='feed-active-video']");
+    if (active && active.isConnected && visibleArea(active) > 0) return active;
+    var nodes = document.querySelectorAll(
+      "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail'], #sliderVideo"
+    );
+    var best = null;
+    var bestA = 0;
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var area = visibleArea(nodes[i]);
+      if (area > bestA) {
+        bestA = area;
+        best = nodes[i];
+      }
+    }
+    if (best && bestA > 6400) return best;
+    return document.querySelector("[data-e2e='video-detail']") || document.body;
+  }
+
+  function awemeKey() {
+    var path = location.pathname || "";
+    var m = path.match(/\/video\/(\d+)/);
+    var id = m ? m[1] : "";
+    if (!id) {
+      var player = document.querySelector("[data-e2e='player-container'][class*='video_']");
+      if (player && player.className) {
+        var cm = String(player.className).match(/video_(\d+)/);
+        if (cm) id = cm[1];
+      }
+    }
+    var scope = activeVideoRoot();
+    var e2e = scope && scope.getAttribute ? scope.getAttribute("data-e2e") || "" : "";
+    return id + "@" + e2e;
+  }
+
+  function markActiveAweme() {
+    var scope = activeVideoRoot();
+    var prev = document.querySelectorAll(".pcwtm-active-aweme");
+    var i;
+    var swapped = false;
+    for (i = 0; i < prev.length; i++) {
+      if (prev[i] !== scope) prev[i].classList.remove("pcwtm-active-aweme");
+    }
+    if (scope && scope.classList && scope !== document.body) {
+      scope.classList.add("pcwtm-active-aweme");
+    }
+    var key = awemeKey();
+    if (key !== lastAwemeKey) {
+      lastAwemeKey = key;
+      swapped = true;
+      document.documentElement.classList.remove("pcwtm-comments");
+      var leftover = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
+      for (i = 0; i < leftover.length; i++) {
+        leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+      }
+    }
+    return swapped;
+  }
+
+  function commentSidePanels() {
+    return document.querySelectorAll("#videoSideCard, #videoSideBar");
+  }
+
+  function panelOwner(el) {
+    if (!el || !el.closest) return null;
+    return el.closest(
+      "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail'], #sliderVideo"
+    );
+  }
+
   /* Live: official close sets #videoSideCard/#videoSideBar width to 0 but
    * leaves #relatedVideoCard and [data-e2e=comment-list] in the DOM.
-   * Peek without our sheet class so offsetWidth is the host's, not ours. */
+   * Peek without our sheet class so offsetWidth is the host's, not ours.
+   * After /video/:id SPA swap, getElementById still hits the first card —
+   * walk every id twin and keep the one for the in-view aweme. */
   function officialCommentPanel() {
     var root = document.documentElement;
     var held = root.classList.contains("pcwtm-comments");
     if (held) root.classList.remove("pcwtm-comments");
-    var card = document.getElementById("videoSideCard");
-    var bar = document.getElementById("videoSideBar");
-    var cw = card ? card.offsetWidth : 0;
-    var bw = bar ? bar.offsetWidth : 0;
-    var panel = null;
-    if (cw >= bw && cw > 48) panel = card;
-    else if (bw > 48) panel = bar;
+    var scope = activeVideoRoot();
+    var panels = commentSidePanels();
+    var best = null;
+    var bestW = 0;
+    var i;
+    for (i = 0; i < panels.length; i++) {
+      var el = panels[i];
+      if (!el || !el.isConnected) continue;
+      var w = el.offsetWidth || 0;
+      if (w <= 48) continue;
+      var owner = panelOwner(el);
+      if (owner && scope && owner !== scope && visibleArea(owner) < 6400) continue;
+      if (w > bestW) {
+        bestW = w;
+        best = el;
+      }
+    }
     if (held) root.classList.add("pcwtm-comments");
-    return panel;
+    return best;
   }
 
   function findOfficialClose(panel) {
@@ -542,12 +640,32 @@
     return best;
   }
 
+  function findActiveCommentIcon() {
+    var scope = activeVideoRoot();
+    var icons = document.querySelectorAll("[data-e2e='feed-comment-icon']");
+    var scoped = null;
+    var vis = null;
+    var i;
+    for (i = 0; i < icons.length; i++) {
+      var icon = icons[i];
+      var r = icon.getBoundingClientRect();
+      var shown = r.width > 1 && r.height > 1;
+      if (scope && scope.contains && scope.contains(icon)) {
+        if (shown || !scoped) scoped = icon;
+        if (shown) break;
+      }
+      if (shown && !vis) vis = icon;
+    }
+    return scoped || vis || null;
+  }
+
   function findRailCommentChip() {
-    var icon = document.querySelector("[data-e2e='feed-comment-icon']");
+    var icon = findActiveCommentIcon();
     if (!icon) return null;
-    var scope = icon.parentElement && icon.parentElement.parentElement;
-    if (!scope) scope = document.body;
-    var nodes = scope.querySelectorAll("button, [role='button'], div, span");
+    var rail = icon.parentElement && icon.parentElement.parentElement;
+    if (!rail) rail = icon.closest && icon.closest(".positionBox");
+    if (!rail) rail = document.body;
+    var nodes = rail.querySelectorAll("button, [role='button'], div, span");
     var i;
     for (i = 0; i < nodes.length; i++) {
       var el = nodes[i];
@@ -583,12 +701,13 @@
         if (!t || !t.closest) return;
         if (
           !t.closest(
-            "#videoSideCard, #videoSideBar, [data-e2e='feed-comment-icon'], #sliderVideo, .xgplayer, .positionBox"
+            "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='feed-comment-icon'], [data-e2e='comment-list'], [data-e2e='video-detail'], [data-e2e='feed-video'], [data-e2e='feed-active-video'], #sliderVideo, .xgplayer, .positionBox"
           )
         )
           return;
         setTimeout(syncCommentSheet, 50);
         setTimeout(syncCommentSheet, 250);
+        setTimeout(syncCommentSheet, 600);
       },
       true
     );
@@ -646,20 +765,16 @@
   }
 
   function syncCommentSheet() {
+    markActiveAweme();
     var panel = officialCommentPanel();
     document.documentElement.classList.toggle("pcwtm-comments", !!panel);
-    if (!panel) {
-      var leftover = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
-      var i;
-      for (i = 0; i < leftover.length; i++) {
-        leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
-      }
-      return;
+    var marked = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
+    var i;
+    for (i = 0; i < marked.length; i++) {
+      if (marked[i] !== panel) marked[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
     }
-    ["videoSideCard", "videoSideBar"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.classList.toggle("pcwtm-sheet-panel", el === panel);
-    });
+    if (!panel) return;
+    panel.classList.add("pcwtm-sheet-panel");
     markOfficialClose(panel);
     markSheetTabs(panel);
     hideSheetPromos(panel);
@@ -935,11 +1050,23 @@
           dy < 0
             ? '[data-e2e="video-switch-next-arrow"]'
             : '[data-e2e="video-switch-prev-arrow"]';
-        var arrow = document.querySelector(sel);
+        var arrow = officialSwitchArrow(sel);
         if (arrow) arrow.click();
       },
       { passive: true }
     );
+  }
+
+  function officialSwitchArrow(sel) {
+    var scope = activeVideoRoot();
+    var arrow = scope && scope.querySelector ? scope.querySelector(sel) : null;
+    if (arrow && visibleArea(arrow) > 0) return arrow;
+    var all = document.querySelectorAll(sel);
+    var i;
+    for (i = 0; i < all.length; i++) {
+      if (visibleArea(all[i]) > 0) return all[i];
+    }
+    return all[0] || null;
   }
 
   function sameTab() {
@@ -971,6 +1098,11 @@
     if (on) {
       ensureChrome();
       startWatch();
+      if (markActiveAweme()) {
+        setTimeout(syncCommentSheet, 50);
+        setTimeout(syncCommentSheet, 250);
+        setTimeout(syncCommentSheet, 600);
+      }
       syncCommentSheet();
       rememberVideoPage();
       retargetOfficialVideoBack();
@@ -978,6 +1110,14 @@
     } else {
       stopWatch();
     }
+  }
+
+  function watchRoot(el, opts) {
+    if (!el || observedRoots.indexOf(el) !== -1) return;
+    var obs = new MutationObserver(schedule);
+    obs.observe(el, opts || { childList: true });
+    rootObservers.push(obs);
+    observedRoots.push(el);
   }
 
   function connectSmallRoots() {
@@ -994,19 +1134,37 @@
     }
     observedRoots = live;
     rootObservers = nextObs;
-    ["slidelist", "douyin-header", "videoSideCard", "videoSideBar"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el || observedRoots.indexOf(el) !== -1) return;
-      var obs = new MutationObserver(schedule);
-      var opts = { childList: true };
-      if (id === "videoSideCard" || id === "videoSideBar") {
-        opts.attributes = true;
-        opts.attributeFilter = ["style", "class"];
-      }
-      obs.observe(el, opts);
-      rootObservers.push(obs);
-      observedRoots.push(el);
-    });
+    watchRoot(document.getElementById("slidelist"), { childList: true });
+    watchRoot(document.getElementById("douyin-header"), { childList: true });
+    watchRoot(document.getElementById("sliderVideo"), { childList: true });
+    watchRoot(document.getElementById("douyin-right-container"), { childList: true });
+    var sides = commentSidePanels();
+    for (i = 0; i < sides.length; i++) {
+      watchRoot(sides[i], {
+        childList: true,
+        attributes: true,
+        attributeFilter: ["style", "class"],
+      });
+    }
+    var locals = document.querySelectorAll(
+      "[data-e2e='video-detail'], [data-e2e='feed-active-video'], .leftContainer, .route-scroll-container, .parent-route-container"
+    );
+    for (i = 0; i < locals.length; i++) {
+      watchRoot(locals[i], { childList: true });
+    }
+    bindDetailScroll();
+  }
+
+  function bindDetailScroll() {
+    var roots = document.querySelectorAll(
+      ".route-scroll-container, .parent-route-container, #slidelist"
+    );
+    var i;
+    for (i = 0; i < roots.length; i++) {
+      if (roots[i].getAttribute("data-pcwtm-scroll") === "1") continue;
+      roots[i].setAttribute("data-pcwtm-scroll", "1");
+      roots[i].addEventListener("scroll", schedule, { passive: true });
+    }
   }
 
   function onNavigate() {
@@ -1046,7 +1204,7 @@
         return;
       }
       if (!dest) return;
-      if (!isVideoPath() && !cameFromVideo()) return;
+      if (!isDetailPage() && !cameFromVideo()) return;
       if (!isDumpDest(dest)) return;
       persistVideoMark();
       if (!e.canIntercept) {
