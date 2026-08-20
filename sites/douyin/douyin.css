@@ -17,6 +17,11 @@
  *   Comments on feed: #videoSideCard (visible) #videoSideBar (often width 0)
  *     #relatedVideoCard #merge-all-comment-container [data-e2e="comment-list"]
  *   /video/:id: [data-e2e="video-detail"|"player-container"] .leftContainer
+ *     Official like/comment/fav/share is often a SIBLING right column
+ *     (#douyin-sidebar / video-detail > *), not inside .positionBox.
+ *     Do not 100dvh-clip that sibling. Do not display:none a host unless
+ *     the rail is confirmed absent from it. e2e names may differ from
+ *     video-player-digg / feed-comment-icon.
  *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar
  * Hashed class names (e.g. .eRu21rp0) are avoided — they rotate.
  * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.
@@ -61,6 +66,13 @@ html.pcwtm body {
   background: var(--pcwtm-bg);
 }
 
+/* overflow-x:hidden + a 100vw player clips a sibling right-column rail.
+ * One overflow value — do not split x/y (that recomputes x to auto). */
+html.pcwtm.pcwtm-video,
+html.pcwtm.pcwtm-video body {
+  overflow: hidden !important;
+}
+
 html.pcwtm body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
@@ -98,21 +110,25 @@ html.pcwtm [data-e2e="player-container"] {
 
 html.pcwtm #douyin-navigation,
 html.pcwtm [data-e2e="douyin-navigation"],
-html.pcwtm #douyin-sidebar:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])),
-html.pcwtm #douyin-sidebar-new:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e$="-digg"])):not(:has([data-e2e*="comment-icon"])),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar-new:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e$="-digg"])):not(:has([data-e2e*="comment-icon"])),
 html.pcwtm img#douyin-temp-sidebar {
   display: none !important;
   content-visibility: hidden;
   contain: strict;
 }
 
-/* /video/:id may keep like/comment/fav/share in the PC sidebar. Unlock
- * that host and overlay the official rail on the video. */
-html.pcwtm #douyin-sidebar:has([data-e2e="video-player-digg"]),
-html.pcwtm #douyin-sidebar:has([data-e2e="feed-comment-icon"]),
-html.pcwtm #douyin-sidebar-new:has([data-e2e="video-player-digg"]),
-html.pcwtm #douyin-sidebar-new:has([data-e2e="feed-comment-icon"]) {
-  display: block !important;
+/* Recommend: overlay the sidebar only when it actually hosts the rail. */
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar:has([data-e2e="video-player-digg"]),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar:has([data-e2e="feed-comment-icon"]),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar:has([data-e2e$="-digg"]),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar:has([data-e2e*="comment-icon"]),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar-new:has([data-e2e="video-player-digg"]),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar-new:has([data-e2e="feed-comment-icon"]),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar-new:has([data-e2e$="-digg"]),
+html.pcwtm:not(.pcwtm-video) #douyin-sidebar-new:has([data-e2e*="comment-icon"]) {
+  display: flex !important;
+  flex-direction: column !important;
   content-visibility: visible !important;
   contain: none !important;
   position: fixed !important;
@@ -130,9 +146,33 @@ html.pcwtm #douyin-sidebar-new:has([data-e2e="feed-comment-icon"]) {
   pointer-events: auto !important;
   overflow: visible !important;
 }
-html.pcwtm #douyin-sidebar:has([data-e2e="feed-comment-icon"]) > :not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])),
-html.pcwtm #douyin-sidebar-new:has([data-e2e="feed-comment-icon"]) > :not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])) {
-  display: none !important;
+
+/* /video/:id: do not display:none #douyin-sidebar. Live detail often puts
+ * the official rail in this sibling (e2e names may not be digg / comment-icon). */
+html.pcwtm.pcwtm-video #douyin-sidebar,
+html.pcwtm.pcwtm-video #douyin-sidebar-new {
+  display: flex !important;
+  flex-direction: column !important;
+  content-visibility: visible !important;
+  contain: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: translateY(-50%) !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: 80dvh !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  z-index: 40;
+  overflow: visible !important;
 }
 
 /* ---------- Header (search stays; feed hides this for full-bleed) ---------- */
@@ -427,6 +467,7 @@ html.pcwtm .basePlayerContainer .positionBox,
 html.pcwtm [data-e2e="feed-active-video"] .positionBox,
 html.pcwtm [data-e2e="feed-video"] .positionBox,
 html.pcwtm [data-e2e="video-detail"] .positionBox,
+html.pcwtm.pcwtm-video .positionBox,
 html.pcwtm .pcwtm-active-aweme .positionBox,
 html.pcwtm [class*="hide-interaction-area"].positionBox {
   position: absolute !important;
@@ -449,7 +490,11 @@ html.pcwtm [class*="hide-interaction-area"].positionBox {
 html.pcwtm [data-e2e="feed-comment-icon"],
 html.pcwtm [data-e2e="video-player-digg"],
 html.pcwtm [data-e2e="video-player-collect"],
-html.pcwtm [data-e2e="video-player-share"] {
+html.pcwtm [data-e2e="video-player-share"],
+html.pcwtm [data-e2e$="-digg"],
+html.pcwtm [data-e2e*="comment-icon"],
+html.pcwtm [data-e2e$="-collect"],
+html.pcwtm [data-e2e$="-share"] {
   pointer-events: auto !important;
   touch-action: manipulation;
   min-width: var(--pcwtm-tap);
@@ -459,8 +504,8 @@ html.pcwtm [data-e2e="video-player-share"] {
 }
 
 /* Official bottom player chrome (quality / speed / PiP / progress) covers watch.
- * Do not hide .xgplayer-controls when it is the host of the action rail. */
-html.pcwtm .xgplayer-controls:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])),
+ * Never display:none .xgplayer-controls — detail may host the rail there
+ * under e2e names other than video-player-digg / feed-comment-icon. */
 html.pcwtm .xgplayer-progress,
 html.pcwtm .xgplayer-pip,
 html.pcwtm .xgplayer-fullscreen,
@@ -471,23 +516,33 @@ html.pcwtm .xgplayer-playbackrate,
 html.pcwtm .xgplayer-play,
 html.pcwtm .xgplayer-time,
 html.pcwtm [data-e2e="xgplayer-page-full-screen"],
-html.pcwtm [data-e2e="video-play-more"] {
+html.pcwtm [data-e2e="video-player-auto-play"],
+html.pcwtm [data-e2e="danmaku-container"],
+html.pcwtm [data-e2e="video-play-more"]:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e$="-digg"])):not(:has([data-e2e*="comment-icon"])) {
   display: none !important;
   content-visibility: hidden;
 }
 
-html.pcwtm .xgplayer-controls:has([data-e2e="video-player-digg"]),
-html.pcwtm .xgplayer-controls:has([data-e2e="feed-comment-icon"]) {
+html.pcwtm .xgplayer-controls {
   display: flex !important;
   content-visibility: visible !important;
+  visibility: visible !important;
+  opacity: 1 !important;
   pointer-events: none;
   background: transparent !important;
 }
 html.pcwtm .xgplayer-controls [data-e2e="video-player-digg"],
 html.pcwtm .xgplayer-controls [data-e2e="feed-comment-icon"],
 html.pcwtm .xgplayer-controls [data-e2e="video-player-collect"],
-html.pcwtm .xgplayer-controls [data-e2e="video-player-share"] {
+html.pcwtm .xgplayer-controls [data-e2e="video-player-share"],
+html.pcwtm .xgplayer-controls [data-e2e$="-digg"],
+html.pcwtm .xgplayer-controls [data-e2e*="comment-icon"],
+html.pcwtm .xgplayer-controls [data-e2e$="-collect"],
+html.pcwtm .xgplayer-controls [data-e2e$="-share"] {
   pointer-events: auto !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* After /video/:id slide, immersive hide can leave the new card's icon at 0×0
@@ -731,7 +786,7 @@ html.pcwtm [data-e2e="video-detail"] {
   margin: 0 !important;
 }
 
-html.pcwtm [data-e2e="video-detail"] > * {
+html.pcwtm:not(.pcwtm-video) [data-e2e="video-detail"] > * {
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
@@ -774,9 +829,37 @@ html.pcwtm [data-e2e="video-detail"] .xgplayer {
   background: var(--pcwtm-bg);
 }
 
-/* /video/:id: hide header like recommend; player full-bleed, no gutters. */
+/* /video/:id: player fills the viewport, but overflow must stay visible.
+ * Official rail is often a SIBLING right column — 100dvh + overflow hidden
+ * + width:100% on every child clips it off-screen. Overlay that sibling. */
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 100dvh !important;
   min-height: 100dvh !important;
+  overflow: visible !important;
+}
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > .leftContainer,
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > [data-e2e="player-container"] {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+}
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] [data-e2e="player-container"],
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] .video-detail-container,
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] .leftContainer,
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] .playerContainer,
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] .basePlayerContainer,
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] .xgplayer,
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] .xgplayer-container,
+html.pcwtm.pcwtm-video #basePlayerContainer,
+html.pcwtm.pcwtm-video #playerContainer,
+html.pcwtm.pcwtm-video #waterFallScrollList {
+  overflow: visible !important;
 }
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] [data-e2e="player-container"],
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] .video-detail-container,
@@ -794,6 +877,37 @@ html.pcwtm.pcwtm-video #basePlayerContainer {
   aspect-ratio: auto !important;
   border-radius: 0 !important;
   background: var(--pcwtm-bg) !important;
+}
+
+/* Overlay official action hosts that sit beside the player, not inside it. */
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e$="-digg"]),
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e*="comment-icon"]),
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e="video-player-digg"]),
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e="feed-comment-icon"]),
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e="video-player-collect"]),
+html.pcwtm.pcwtm-video [data-e2e="video-detail"] > *:has([data-e2e="video-player-share"]),
+html.pcwtm.pcwtm-video .leftContainer ~ *:has([data-e2e$="-digg"]),
+html.pcwtm.pcwtm-video .leftContainer ~ *:has([data-e2e*="comment-icon"]),
+html.pcwtm.pcwtm-video #playerContainer ~ *:has([data-e2e$="-digg"]),
+html.pcwtm.pcwtm-video #playerContainer ~ *:has([data-e2e*="comment-icon"]),
+html.pcwtm.pcwtm-video #basePlayerContainer ~ *:has([data-e2e$="-digg"]),
+html.pcwtm.pcwtm-video #basePlayerContainer ~ *:has([data-e2e*="comment-icon"]) {
+  position: fixed !important;
+  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: translateY(-50%) !important;
+  width: auto !important;
+  max-width: none !important;
+  height: auto !important;
+  max-height: 80dvh !important;
+  z-index: 40 !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+  background: transparent !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 html.pcwtm.pcwtm-video [data-e2e="video-detail"] video,
 html.pcwtm.pcwtm-video .xgplayer video,
