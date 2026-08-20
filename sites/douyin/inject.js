@@ -1498,15 +1498,27 @@
     bindTraverseIntercept();
   }
 
+  function isLoginWallNode(el) {
+    return !!(
+      el &&
+      el.closest &&
+      el.closest(
+        "#login-panel-new, #douyin-login-new-id, #douyin_login_comp_flat_panel, #douyin_login_comp_single_panel, #douyin_login_landing_flat_container, #douyin_login_comp_mobile_code, [id^='login-full-panel-']"
+      )
+    );
+  }
+
   function onSameOriginClick(e) {
     var t = e.target;
-    if (wantMobile() && isVideoPath() && t && t.closest) {
+    /* Official login X is often aria-label=关闭. Do not steal that click
+     * as 返回 — preventDefault left the white card painted. */
+    if (wantMobile() && isVideoPath() && t && t.closest && !isLoginWallNode(t)) {
       var back = t.closest("a, button, [role='button']");
-      if (back && !back.closest("#pcwtm-drawer") && !isOfficialSwitch(back)) {
+      if (back && !back.closest("#pcwtm-drawer") && !isOfficialSwitch(back) && !isLoginWallNode(back)) {
         var backLabel = labelOf(back);
         var href = back.href || back.getAttribute("href") || "";
         if (
-          /^(返回|Back|关闭)$/i.test(backLabel) ||
+          /^(返回|Back)$/i.test(backLabel) ||
           back.getAttribute("data-pcwtm-videoback") === "1" ||
           (href && isDumpDest(href) && !/^(精选|推荐|For You|Topick)$/i.test(backLabel))
         ) {
