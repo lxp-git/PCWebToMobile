@@ -98,12 +98,41 @@ html.pcwtm [data-e2e="player-container"] {
 
 html.pcwtm #douyin-navigation,
 html.pcwtm [data-e2e="douyin-navigation"],
-html.pcwtm #douyin-sidebar,
-html.pcwtm #douyin-sidebar-new,
+html.pcwtm #douyin-sidebar:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])),
+html.pcwtm #douyin-sidebar-new:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])),
 html.pcwtm img#douyin-temp-sidebar {
   display: none !important;
   content-visibility: hidden;
   contain: strict;
+}
+
+/* /video/:id may keep like/comment/fav/share in the PC sidebar. Unlock
+ * that host and overlay the official rail on the video. */
+html.pcwtm #douyin-sidebar:has([data-e2e="video-player-digg"]),
+html.pcwtm #douyin-sidebar:has([data-e2e="feed-comment-icon"]),
+html.pcwtm #douyin-sidebar-new:has([data-e2e="video-player-digg"]),
+html.pcwtm #douyin-sidebar-new:has([data-e2e="feed-comment-icon"]) {
+  display: block !important;
+  content-visibility: visible !important;
+  contain: none !important;
+  position: fixed !important;
+  right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;
+  bottom: calc(var(--pcwtm-space) + env(safe-area-inset-bottom)) !important;
+  top: auto !important;
+  left: auto !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  z-index: 40;
+  pointer-events: auto !important;
+  overflow: visible !important;
+}
+html.pcwtm #douyin-sidebar:has([data-e2e="feed-comment-icon"]) > :not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])),
+html.pcwtm #douyin-sidebar-new:has([data-e2e="feed-comment-icon"]) > :not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])) {
+  display: none !important;
 }
 
 /* ---------- Header (search stays; feed hides this for full-bleed) ---------- */
@@ -409,7 +438,10 @@ html.pcwtm [class*="hide-interaction-area"].positionBox {
   height: auto !important;
   min-width: var(--pcwtm-tap);
   transform: none !important;
-  z-index: 5;
+  z-index: 40;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -418,14 +450,18 @@ html.pcwtm [data-e2e="feed-comment-icon"],
 html.pcwtm [data-e2e="video-player-digg"],
 html.pcwtm [data-e2e="video-player-collect"],
 html.pcwtm [data-e2e="video-player-share"] {
-  pointer-events: auto;
+  pointer-events: auto !important;
   touch-action: manipulation;
   min-width: var(--pcwtm-tap);
   min-height: var(--pcwtm-tap);
+  visibility: visible !important;
+  opacity: 1 !important;
+  cursor: pointer;
 }
 
-/* Official bottom player chrome (quality / speed / PiP / progress) covers watch */
-html.pcwtm .xgplayer-controls,
+/* Official bottom player chrome (quality / speed / PiP / progress) covers watch.
+ * Do not hide .xgplayer-controls when it is the host of the action rail. */
+html.pcwtm .xgplayer-controls:not(:has([data-e2e="video-player-digg"])):not(:has([data-e2e="feed-comment-icon"])),
 html.pcwtm .xgplayer-progress,
 html.pcwtm .xgplayer-pip,
 html.pcwtm .xgplayer-fullscreen,
@@ -439,6 +475,20 @@ html.pcwtm [data-e2e="xgplayer-page-full-screen"],
 html.pcwtm [data-e2e="video-play-more"] {
   display: none !important;
   content-visibility: hidden;
+}
+
+html.pcwtm .xgplayer-controls:has([data-e2e="video-player-digg"]),
+html.pcwtm .xgplayer-controls:has([data-e2e="feed-comment-icon"]) {
+  display: flex !important;
+  content-visibility: visible !important;
+  pointer-events: none;
+  background: transparent !important;
+}
+html.pcwtm .xgplayer-controls [data-e2e="video-player-digg"],
+html.pcwtm .xgplayer-controls [data-e2e="feed-comment-icon"],
+html.pcwtm .xgplayer-controls [data-e2e="video-player-collect"],
+html.pcwtm .xgplayer-controls [data-e2e="video-player-share"] {
+  pointer-events: auto !important;
 }
 
 /* After /video/:id slide, immersive hide can leave the new card's icon at 0×0
@@ -628,13 +678,33 @@ html.pcwtm [id^="login-full-panel-"] > * {
   pointer-events: none !important;
 }
 
-html.pcwtm [id^="login-full-panel-"] #login-panel-new,
-html.pcwtm [id^="login-full-panel-"] #login-panel-new *,
-html.pcwtm [id^="login-full-panel-"] #douyin-login-new-id,
-html.pcwtm [id^="login-full-panel-"] #douyin-login-new-id *,
-html.pcwtm [id^="login-full-panel-"] article#douyin_login_comp_flat_panel,
-html.pcwtm [id^="login-full-panel-"] article#douyin_login_comp_flat_panel * {
+/* Re-enable only the official card, not every leftover descendant.
+ * Live after login X: #login-panel-new can stay display:flex / h=0 while a
+ * middle layer with pointer-events:all still sits on the action rail. */
+html.pcwtm #login-panel-new *,
+html.pcwtm #douyin-login-new-id * {
+  pointer-events: none !important;
+}
+html.pcwtm #login-panel-new #douyin_login_comp_flat_panel,
+html.pcwtm #login-panel-new #douyin_login_comp_flat_panel *,
+html.pcwtm #login-panel-new #douyin_login_comp_single_panel,
+html.pcwtm #login-panel-new #douyin_login_comp_single_panel *,
+html.pcwtm #login-panel-new #douyin_login_comp_mobile_code,
+html.pcwtm #login-panel-new #douyin_login_comp_mobile_code *,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_flat_panel,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_flat_panel *,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel *,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code *,
+html.pcwtm article#douyin_login_comp_flat_panel,
+html.pcwtm article#douyin_login_comp_flat_panel * {
   pointer-events: auto !important;
+}
+
+html.pcwtm [data-e2e="recommend-guide-mask"],
+html.pcwtm #douyin-web-recommend-guide-mask {
+  pointer-events: none !important;
 }
 
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-item"],
