@@ -158,6 +158,16 @@
     return isDumpDest(href);
   }
 
+  function isOfficialSwitch(el) {
+    return !!(
+      el &&
+      el.closest &&
+      el.closest(
+        "[data-e2e='video-switch-next-arrow'], [data-e2e='video-switch-prev-arrow'], .xgplayer-playswitch"
+      )
+    );
+  }
+
   function retargetOfficialVideoBack() {
     if (!isVideoPath() || !wantMobile()) return;
     var nodes = document.querySelectorAll("a[href], [data-e2e='video-detail'] a");
@@ -166,6 +176,7 @@
       var a = nodes[i];
       if (!a.href || !isDumpDest(a.href)) continue;
       if (a.closest && a.closest("#pcwtm-drawer")) continue;
+      if (isOfficialSwitch(a)) continue;
       var lab = labelOf(a);
       if (/^(精选|推荐|For You|Topick)$/i.test(lab)) continue;
       if (a.getAttribute("data-pcwtm-videoback") === "1") continue;
@@ -1306,7 +1317,7 @@
     var t = e.target;
     if (wantMobile() && isVideoPath() && t && t.closest) {
       var back = t.closest("a, button, [role='button']");
-      if (back && !back.closest("#pcwtm-drawer")) {
+      if (back && !back.closest("#pcwtm-drawer") && !isOfficialSwitch(back)) {
         var backLabel = labelOf(back);
         var href = back.href || back.getAttribute("href") || "";
         if (
@@ -1337,6 +1348,10 @@
         return;
       }
       if (shouldHijackLeave(a.href)) {
+        if (isOfficialSwitch(a)) {
+          onNavigate();
+          return;
+        }
         e.preventDefault();
         e.stopPropagation();
         goRecommend();
