@@ -739,8 +739,19 @@
         leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
         if (leftover[i].style) leftover[i].style.transform = "";
       }
+      dismissOfficialPanels();
     }
     return swapped;
+  }
+
+  function dismissOfficialPanels() {
+    var panels = commentSidePanels();
+    var i;
+    for (i = 0; i < panels.length; i++) {
+      if ((panels[i].offsetWidth || 0) <= 48) continue;
+      var closer = findOfficialClose(panels[i]);
+      if (closer) closer.click();
+    }
   }
 
   function commentSidePanels() {
@@ -763,6 +774,10 @@
     var root = document.documentElement;
     var held = root.classList.contains("pcwtm-comments");
     if (held) root.classList.remove("pcwtm-comments");
+    if (Date.now() < suppressSheetUntil) {
+      if (held) root.classList.add("pcwtm-comments");
+      return null;
+    }
     var scope = activeVideoRoot();
     var panels = commentSidePanels();
     var best = null;
@@ -775,7 +790,6 @@
       if (w <= 48) continue;
       var owner = panelOwner(el);
       if (owner && scope && owner !== scope && visibleArea(owner) < 6400) continue;
-      if (Date.now() < suppressSheetUntil && owner !== scope) continue;
       if (w > bestW) {
         bestW = w;
         best = el;
@@ -885,6 +899,7 @@
           )
         )
           return;
+        if (t.closest("[data-e2e='feed-comment-icon']")) suppressSheetUntil = 0;
         setTimeout(syncCommentSheet, 50);
         setTimeout(syncCommentSheet, 250);
         setTimeout(syncCommentSheet, 600);
