@@ -184,7 +184,7 @@
     if (
       !have["搜索"] &&
       document.querySelector(
-        '#douyin-header input[data-e2e="searchbar-input"], #douyin-header input[type="search"], #douyin-header input[type="text"]'
+        '#douyin-header input[data-e2e="searchbar-input"], #douyin-header input[type="search"]'
       )
     ) {
       extras.push({ text: "搜索", kind: "search" });
@@ -240,7 +240,7 @@
     closeDrawer();
     if (kind === "search") {
       var input = document.querySelector(
-        '#douyin-header input[data-e2e="searchbar-input"], #douyin-header input[type="search"], #douyin-header input[type="text"]'
+        '#douyin-header input[data-e2e="searchbar-input"], #douyin-header input[type="search"]'
       );
       if (!input) return;
       document.documentElement.classList.add("pcwtm-searching");
