@@ -638,7 +638,15 @@ html.pcwtm .xgplayer-playswitch {
 
 /* Bottom sheet only while html.pcwtm-comments (official side width > 0).
  * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay
- * in the DOM at width 0. :has() would keep this block applied. */
+ * in the DOM at width 0. :has() would keep this block applied.
+ * Live recommend /?recommend=1 390×844: official list
+ * ([data-e2e=comment-list]) is 294×294, scrollH===clientH — it is not
+ * the scrollport. Overflow sits on #videoSideCard / #relatedVideoCard
+ * (sheet 420 / client 419 / scrollH 476). overflow:hidden on this
+ * host ate that overflow (scrollTop stuck). html/body were overflow-x
+ * hidden + overflow-y auto, not overflow:hidden. 100dvh slidelist did
+ * not clip this fixed sheet. Finger/wheel must reach this official
+ * host — overflow-y:auto + pan-y, not hidden. */
 html.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,
 html.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
@@ -655,8 +663,11 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
   border-top: 1px solid var(--pcwtm-border);
   border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */
   z-index: 10055 !important;
-  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   padding: 0 0 env(safe-area-inset-bottom);
   box-sizing: border-box !important;
   pointer-events: auto !important;
@@ -769,6 +780,7 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-list"] {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   pointer-events: auto !important;
 }
 
