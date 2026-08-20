@@ -316,9 +316,16 @@ html.pcwtm #videoSideBar:has([data-e2e="comment-list"]) {
   max-width: 100% !important;
   height: 72% !important;
   max-height: 72dvh !important;
-  background: rgba(22, 24, 35, 0.96) !important;
+  background: #161823 !important;
   z-index: 10040 !important;
   overflow: hidden !important;
+}
+
+html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .positionBox,
+html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) .xgplayer-playswitch,
+html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .positionBox,
+html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) .xgplayer-playswitch {
+  visibility: hidden !important;
 }
 
 html.pcwtm #relatedVideoCard,
@@ -442,16 +449,19 @@ html.pcwtm .jingxuan-scroll-element {
   gap: 10px !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   padding: 8px var(--pcwtm-gap) 72px !important;
   box-sizing: border-box !important;
+  overflow-x: hidden !important;
 }
 
 /* Live grid is `.jingxuan-scroll-element > div` with hardcoded 314px 314px */
 html.pcwtm .jingxuan-scroll-element > div {
   display: grid !important;
-  grid-template-columns: 1fr !important;
+  grid-template-columns: minmax(0, 1fr) !important;
   width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   gap: 10px !important;
 }
 
