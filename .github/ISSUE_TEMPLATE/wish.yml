@@ -1,0 +1,33 @@
+name: 许愿
+description: 丢一个 PC 网址，做成手机 UI 的油猴脚本
+title: "许愿: "
+labels: [wish]
+assignees:
+  - lxp-git
+body:
+  - type: input
+    id: url
+    attributes:
+      label: PC 网址
+      description: 要适配的桌面网站，不要 m 站。
+      placeholder: https://www.example.com/
+    validations:
+      required: true
+  - type: textarea
+    id: uses
+    attributes:
+      label: 你真正会用的功能
+      description: 例如首页刷、搜索、播放、评论、收藏。越具体越好做。
+      placeholder: |
+        首页刷推荐
+        搜索后打开
+        播放 + 评论
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: 补充
+      description: 截图、登录墙、一定要留下的 PC 功能，可选。
+    validations:
+      required: false

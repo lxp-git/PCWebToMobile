@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 安装已有脚本
+    url: https://github.com/lxp-git/PCWebToMobile#已有脚本
+    about: 先看目录里有没有现成脚本
