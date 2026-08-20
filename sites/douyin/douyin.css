@@ -111,8 +111,14 @@ html.pcwtm #douyin-header input[type="text"] {
 
 html.pcwtm #douyin-header-menuCt {
   flex: 0 0 auto !important;
-  max-width: 42% !important;
-  overflow: hidden !important;
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+html.pcwtm #douyin-header [data-e2e="notice-entry"],
+html.pcwtm #douyin-header [data-e2e="im-entry"],
+html.pcwtm #douyin-header [data-e2e="something-button"] {
+  display: none !important;
 }
 
 html.pcwtm #douyin-header [id^="douyin-header-menu"] {
@@ -311,7 +317,7 @@ html.pcwtm #videoSideBar:has([data-e2e="comment-list"]) {
   height: 72% !important;
   max-height: 72dvh !important;
   background: rgba(22, 24, 35, 0.96) !important;
-  z-index: 40 !important;
+  z-index: 10040 !important;
   overflow: hidden !important;
 }
 
@@ -334,6 +340,8 @@ html.pcwtm [data-e2e="video-detail"] {
   flex-direction: column !important;
   align-items: stretch !important;
   min-height: calc(100dvh - var(--pcwtm-bar)) !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 html.pcwtm [data-e2e="video-detail"] > * {
@@ -348,6 +356,22 @@ html.pcwtm [data-e2e="video-detail"] .leftContainer {
   display: flex !important;
   flex-direction: column !important;
   padding: 0 !important;
+}
+
+html.pcwtm [data-e2e="video-detail"] .leftContainer > [data-e2e="player-container"] {
+  order: 1;
+}
+
+html.pcwtm [data-e2e="video-detail"] .leftContainer > *:has([data-e2e="detail-video-info"]) {
+  order: 2;
+}
+
+html.pcwtm [data-e2e="video-detail"] .leftContainer > *:has([data-e2e="comment-list"]) {
+  order: 3;
+}
+
+html.pcwtm [data-e2e="video-detail"] .leftContainer > *:has([data-e2e="related-video"]) {
+  order: 4;
 }
 
 html.pcwtm [data-e2e="video-detail"] [data-e2e="player-container"],
@@ -411,6 +435,7 @@ html.pcwtm .discover-tab-bar::-webkit-scrollbar {
   display: none;
 }
 
+html.pcwtm .jingxuanFeedList,
 html.pcwtm .jingxuan-scroll-element {
   display: flex !important;
   flex-direction: column !important;
@@ -421,8 +446,19 @@ html.pcwtm .jingxuan-scroll-element {
   box-sizing: border-box !important;
 }
 
+/* Live grid is `.jingxuan-scroll-element > div` with hardcoded 314px 314px */
+html.pcwtm .jingxuan-scroll-element > div {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 10px !important;
+}
+
 html.pcwtm .discover-video-card-item,
-html.pcwtm .discover-video-card-img {
+html.pcwtm .discover-video-card-img,
+html.pcwtm .waterfall-videoCardContainer,
+html.pcwtm .jingxuanVideoCard {
   width: 100% !important;
   max-width: 100% !important;
 }
