@@ -53,6 +53,7 @@
   var detailTrapFor = "";
   var detailTrapPushes = 0;
   var lastAwemeKey = "";
+  var suppressSheetUntil = 0;
 
   function store(key, value) {
     try {
@@ -530,20 +531,36 @@
     return document.querySelector("[data-e2e='video-detail']") || document.body;
   }
 
-  function awemeKey() {
+  function videoDigits(el) {
+    if (!el) return "";
+    var cm = String(el.className || "").match(/video_(\d+)/);
+    return cm ? cm[1] : "";
+  }
+
+  function currentAwemeId() {
     var path = location.pathname || "";
     var m = path.match(/\/video\/(\d+)/);
-    var id = m ? m[1] : "";
-    if (!id) {
-      var player = document.querySelector("[data-e2e='player-container'][class*='video_']");
-      if (player && player.className) {
-        var cm = String(player.className).match(/video_(\d+)/);
-        if (cm) id = cm[1];
-      }
+    if (m) return m[1];
+    try {
+      var mid = new URLSearchParams(location.search).get("modal_id");
+      if (mid && /^\d+$/.test(mid)) return mid;
+    } catch (e) {}
+    var nodes = document.querySelectorAll(
+      ".pcwtm-active-aweme, [data-e2e='feed-active-video'], #sliderVideo, [data-e2e='player-container']"
+    );
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var id = videoDigits(nodes[i]);
+      if (id) return id;
     }
+    return "";
+  }
+
+  function awemeKey() {
     var scope = activeVideoRoot();
-    var e2e = scope && scope.getAttribute ? scope.getAttribute("data-e2e") || "" : "";
-    return id + "@" + e2e;
+    var tag = "";
+    if (scope && scope.getAttribute) tag = scope.getAttribute("data-e2e") || scope.id || "";
+    return currentAwemeId() + "@" + tag;
   }
 
   function markActiveAweme() {
@@ -561,10 +578,12 @@
     if (key !== lastAwemeKey) {
       lastAwemeKey = key;
       swapped = true;
+      suppressSheetUntil = Date.now() + 700;
       document.documentElement.classList.remove("pcwtm-comments");
       var leftover = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
       for (i = 0; i < leftover.length; i++) {
         leftover[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+        if (leftover[i].style) leftover[i].style.transform = "";
       }
     }
     return swapped;
@@ -602,6 +621,7 @@
       if (w <= 48) continue;
       var owner = panelOwner(el);
       if (owner && scope && owner !== scope && visibleArea(owner) < 6400) continue;
+      if (Date.now() < suppressSheetUntil && owner !== scope) continue;
       if (w > bestW) {
         bestW = w;
         best = el;
@@ -643,20 +663,24 @@
   function findActiveCommentIcon() {
     var scope = activeVideoRoot();
     var icons = document.querySelectorAll("[data-e2e='feed-comment-icon']");
+    var best = null;
+    var bestA = 0;
     var scoped = null;
-    var vis = null;
+    var scopedA = 0;
     var i;
     for (i = 0; i < icons.length; i++) {
       var icon = icons[i];
-      var r = icon.getBoundingClientRect();
-      var shown = r.width > 1 && r.height > 1;
-      if (scope && scope.contains && scope.contains(icon)) {
-        if (shown || !scoped) scoped = icon;
-        if (shown) break;
+      var area = visibleArea(icon);
+      if (area > bestA) {
+        bestA = area;
+        best = icon;
       }
-      if (shown && !vis) vis = icon;
+      if (scope && scope.contains && scope.contains(icon) && area > scopedA) {
+        scopedA = area;
+        scoped = icon;
+      }
     }
-    return scoped || vis || null;
+    return (scoped && scopedA > 0 ? scoped : null) || best || null;
   }
 
   function findRailCommentChip() {
@@ -764,6 +788,21 @@
     }
   }
 
+  function placeSheet(panel) {
+    if (!panel || !panel.style) return;
+    panel.style.transform = "";
+    var r = panel.getBoundingClientRect();
+    var vh = window.innerHeight || 0;
+    var dy = vh - r.height - r.top;
+    if (r.height > 40 && Math.abs(dy) > 16) {
+      panel.style.transform = "translateY(" + dy + "px)";
+    }
+  }
+
+  function clearSheetInline(el) {
+    if (el && el.style) el.style.transform = "";
+  }
+
   function syncCommentSheet() {
     markActiveAweme();
     var panel = officialCommentPanel();
@@ -771,10 +810,14 @@
     var marked = document.querySelectorAll("." + HOST_CLOSE_CLASS + ", .pcwtm-sheet-panel");
     var i;
     for (i = 0; i < marked.length; i++) {
-      if (marked[i] !== panel) marked[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+      if (marked[i] !== panel) {
+        marked[i].classList.remove(HOST_CLOSE_CLASS, "pcwtm-sheet-panel");
+        clearSheetInline(marked[i]);
+      }
     }
     if (!panel) return;
     panel.classList.add("pcwtm-sheet-panel");
+    placeSheet(panel);
     markOfficialClose(panel);
     markSheetTabs(panel);
     hideSheetPromos(panel);
