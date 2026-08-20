@@ -1,33 +1,59 @@
 name: 许愿
-description: 丢一个 PC 网址，做成手机 UI 的油猴脚本
+description: 丢一个 PC 网址，做成给 Alook 用的手机 UI 脚本
 title: "许愿: "
 labels: [wish]
 assignees:
   - lxp-git
 body:
+  - type: markdown
+    attributes:
+      value: |
+        会做一段油猴脚本：你点下载，复制进 **iOS Alook** 启用，再用桌面版打开这个网站。
+        PC 的功能，手机的 UI。不是做 App，也不抓内容。
+
+        已有脚本先看 [目录](https://github.com/lxp-git/PCWebToMobile#已有脚本)。
   - type: input
     id: url
     attributes:
       label: PC 网址
-      description: 要适配的桌面网站，不要 m 站。
-      placeholder: https://www.example.com/
+      description: 桌面站地址，不要 m 站。
+      placeholder: https://www.bilibili.com/
     validations:
       required: true
   - type: textarea
     id: uses
     attributes:
-      label: 你真正会用的功能
-      description: 例如首页刷、搜索、播放、评论、收藏。越具体越好做。
+      label: 你真正会用的页面和功能
+      description: 越具体越好做。例如首页刷、搜索、打开、播放、评论、收藏。
       placeholder: |
         首页刷推荐
-        搜索后打开
+        搜索之后点进去
         播放 + 评论
+    validations:
+      required: true
+  - type: dropdown
+    id: login
+    attributes:
+      label: 要登录吗
+      options:
+        - 不用登录就能用
+        - 要登录才有我要的功能
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: 你装脚本的浏览器
+      options:
+        - iOS Alook
+        - 其它能装油猴的浏览器
+      default: 0
     validations:
       required: true
   - type: textarea
     id: notes
     attributes:
       label: 补充
-      description: 截图、登录墙、一定要留下的 PC 功能，可选。
+      description: 截图、一定要留下的 PC 功能、登录墙、已知坑。可选。
     validations:
       required: false
