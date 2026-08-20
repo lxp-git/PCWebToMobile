@@ -498,12 +498,7 @@
     return h * w;
   }
 
-  function activeVideoRoot() {
-    var active = document.querySelector("[data-e2e='feed-active-video']");
-    if (active && active.isConnected && visibleArea(active) > 0) return active;
-    var nodes = document.querySelectorAll(
-      "[data-e2e='feed-active-video'], [data-e2e='feed-video'], [data-e2e='video-detail'], #sliderVideo"
-    );
+  function pickMostVisible(nodes) {
     var best = null;
     var bestA = 0;
     var i;
@@ -514,8 +509,7 @@
         best = nodes[i];
       }
     }
-    if (best && bestA > 6400) return best;
-    return document.querySelector("[data-e2e='video-detail']") || document.body;
+    return bestA > 6400 ? best : null;
   }
 
   function videoDigits(el) {
@@ -524,7 +518,7 @@
     return cm ? cm[1] : "";
   }
 
-  function currentAwemeId() {
+  function pathAwemeId() {
     var path = location.pathname || "";
     var m = path.match(/\/video\/(\d+)/);
     if (m) return m[1];
@@ -532,15 +526,33 @@
       var mid = new URLSearchParams(location.search).get("modal_id");
       if (mid && /^\d+$/.test(mid)) return mid;
     } catch (e) {}
-    var nodes = document.querySelectorAll(
-      ".pcwtm-active-aweme, [data-e2e='feed-active-video'], #sliderVideo, [data-e2e='player-container']"
-    );
-    var i;
-    for (i = 0; i < nodes.length; i++) {
-      var id = videoDigits(nodes[i]);
-      if (id) return id;
+    return "";
+  }
+
+  function idFromScope(scope) {
+    var id = videoDigits(scope);
+    if (id) return id;
+    if (scope && scope.querySelector) {
+      return videoDigits(scope.querySelector("[class*='video_']"));
     }
     return "";
+  }
+
+  /* Do not use querySelector for feed-active-video / video-detail — after a
+   * /video/:id slide those attrs stay on the first card. Pick the in-view item. */
+  function activeVideoRoot() {
+    var best =
+      pickMostVisible(document.querySelectorAll("[data-e2e='feed-active-video']")) ||
+      pickMostVisible(document.querySelectorAll("[data-e2e='feed-video']")) ||
+      pickMostVisible(document.querySelectorAll("[data-e2e='video-detail']"));
+    if (best) return best;
+    var slider = document.getElementById("sliderVideo");
+    if (slider && visibleArea(slider) > 6400) return slider;
+    return document.querySelector("[data-e2e='video-detail']") || document.body;
+  }
+
+  function currentAwemeId() {
+    return idFromScope(activeVideoRoot()) || pathAwemeId();
   }
 
   function awemeKey() {
@@ -712,7 +724,7 @@
         if (!t || !t.closest) return;
         if (
           !t.closest(
-            "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='feed-comment-icon'], [data-e2e='comment-list'], [data-e2e='video-detail'], [data-e2e='feed-video'], [data-e2e='feed-active-video'], #sliderVideo, .xgplayer, .positionBox"
+            "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='feed-comment-icon'], [data-e2e='comment-list'], [data-e2e='video-detail'], [data-e2e='feed-video'], [data-e2e='feed-active-video'], .pcwtm-active-aweme, #sliderVideo, .xgplayer, .positionBox"
           )
         )
           return;
@@ -1164,9 +1176,14 @@
     }
     observedRoots = live;
     rootObservers = nextObs;
-    watchRoot(document.getElementById("slidelist"), { childList: true });
+    var slideOpts = {
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "data-e2e"],
+    };
+    watchRoot(document.getElementById("slidelist"), slideOpts);
     watchRoot(document.getElementById("douyin-header"), { childList: true });
-    watchRoot(document.getElementById("sliderVideo"), { childList: true });
+    watchRoot(document.getElementById("sliderVideo"), slideOpts);
     watchRoot(document.getElementById("douyin-right-container"), { childList: true });
     var sides = commentSidePanels();
     for (i = 0; i < sides.length; i++) {
@@ -1180,9 +1197,16 @@
       "[data-e2e='video-detail'], [data-e2e='feed-active-video'], .leftContainer, .route-scroll-container, .parent-route-container"
     );
     for (i = 0; i < locals.length; i++) {
-      watchRoot(locals[i], { childList: true });
+      watchRoot(locals[i], slideOpts);
+    }
+    var list = document.getElementById("slidelist");
+    if (list && list.children) {
+      for (i = 0; i < list.children.length && i < 12; i++) {
+        watchRoot(list.children[i], slideOpts);
+      }
     }
     bindDetailScroll();
+    bindSlideSettle();
   }
 
   function bindDetailScroll() {
@@ -1195,6 +1219,13 @@
       roots[i].setAttribute("data-pcwtm-scroll", "1");
       roots[i].addEventListener("scroll", schedule, { passive: true });
     }
+  }
+
+  function bindSlideSettle() {
+    var list = document.getElementById("slidelist");
+    if (!list || list.getAttribute("data-pcwtm-settle") === "1") return;
+    list.setAttribute("data-pcwtm-settle", "1");
+    list.addEventListener("transitionend", schedule, { passive: true });
   }
 
   function onNavigate() {

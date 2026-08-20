@@ -20,7 +20,8 @@
  *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar
  * Hashed class names (e.g. .eRu21rp0) are avoided — they rotate.
  * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.
- * JS marks the in-view aweme with .pcwtm-active-aweme after /video/:id scroll.
+ * JS marks the in-view aweme with .pcwtm-active-aweme after /video/:id slide.
+ * After a slide, do not keep first-card selectors — classes move with the item.
  * JS adds html.pcwtm-comments only when a #videoSideCard / #videoSideBar official
  * width is > 0 (live: closed=0, open≈391). querySelectorAll — not getElementById —
  * so a later card's panel is not skipped. :has(comment-list) stays true after
@@ -317,7 +318,10 @@ html.pcwtm.pcwtm-recommend #slidelist.recommend-slidelist,
 html.pcwtm.pcwtm-recommend [data-e2e="slideList"],
 html.pcwtm.pcwtm-modal #slidelist,
 html.pcwtm.pcwtm-modal #slidelist.recommend-slidelist,
-html.pcwtm.pcwtm-modal [data-e2e="slideList"] {
+html.pcwtm.pcwtm-modal [data-e2e="slideList"],
+html.pcwtm.pcwtm-video #slidelist,
+html.pcwtm.pcwtm-video #slidelist.recommend-slidelist,
+html.pcwtm.pcwtm-video [data-e2e="slideList"] {
   height: 100dvh !important;
   min-height: 100dvh !important;
 }
@@ -365,7 +369,10 @@ html.pcwtm .basePlayerContainer video {
 
 /* Official like / comment / favorite: keep host widgets, don't restyle as stickers */
 html.pcwtm .basePlayerContainer .positionBox,
-html.pcwtm [data-e2e="feed-active-video"] .positionBox {
+html.pcwtm [data-e2e="feed-active-video"] .positionBox,
+html.pcwtm [data-e2e="feed-video"] .positionBox,
+html.pcwtm [data-e2e="video-detail"] .positionBox,
+html.pcwtm .pcwtm-active-aweme .positionBox {
   position: absolute !important;
   right: calc(var(--pcwtm-space) + env(safe-area-inset-right)) !important;
   bottom: calc(80px + env(safe-area-inset-bottom)) !important;
@@ -382,6 +389,11 @@ html.pcwtm [data-e2e="video-player-collect"],
 html.pcwtm [data-e2e="video-player-share"] {
   pointer-events: auto;
   touch-action: manipulation;
+}
+
+html.pcwtm .pcwtm-active-aweme [data-e2e="feed-comment-icon"] {
+  pointer-events: auto !important;
+  visibility: visible;
 }
 
 html.pcwtm #video-info-wrap,
@@ -651,10 +663,18 @@ html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme {
   content-visibility: visible;
 }
 
-html.pcwtm [data-e2e="video-detail"] .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
-html.pcwtm [data-e2e="video-detail"] .leftContainer > div > div:has(.comment-mainContent[data-e2e="comment-list"]),
-html.pcwtm [data-e2e="video-detail"] #comment-input-container,
-html.pcwtm [data-e2e="video-detail"] [data-e2e="comment-list"],
+html.pcwtm [data-e2e="video-detail"]:not(.pcwtm-active-aweme) [data-e2e="comment-list"],
+html.pcwtm [data-e2e="video-detail"]:not(.pcwtm-active-aweme) #comment-input-container {
+  content-visibility: hidden;
+}
+
+html.pcwtm:not(:has(.pcwtm-active-aweme)) [data-e2e="video-detail"] .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
+html.pcwtm:not(:has(.pcwtm-active-aweme)) [data-e2e="video-detail"] .leftContainer > div > div:has(.comment-mainContent[data-e2e="comment-list"]),
+html.pcwtm:not(:has(.pcwtm-active-aweme)) [data-e2e="video-detail"] #comment-input-container,
+html.pcwtm:not(:has(.pcwtm-active-aweme)) [data-e2e="video-detail"] [data-e2e="comment-list"],
+html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
+html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme .leftContainer > div > div:has(.comment-mainContent[data-e2e="comment-list"]),
+html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme #comment-input-container,
 html.pcwtm [data-e2e="video-detail"].pcwtm-active-aweme [data-e2e="comment-list"] {
   position: relative !important;
   width: 100% !important;
