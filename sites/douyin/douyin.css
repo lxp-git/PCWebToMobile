@@ -25,7 +25,10 @@
  * official close — do not use it as the open signal.
  * JS may mark the official close node with .pcwtm-host-close (host node only).
  * Recommend door is /?recommend=1&from_nav=1 (bare ?recommend=1 bounces to jingxuan).
- * Login wall hooks: #login-panel-new #douyin-login-new-id #douyin_login_comp_single_panel.
+ * Login wall (QA 500px, 2026-08-20): #login-panel-new is already 500.
+ * Overflow is article#douyin_login_comp_flat_panel (726, QR + phone).
+ * Left #douyin_login_comp_scan_code / right #douyin_login_comp_single_panel.
+ * Official X sits on the right column (~x=667) — keep it in-viewport.
  */
 
 html.pcwtm {
@@ -741,12 +744,46 @@ html.pcwtm #videoSideBar [class*="EveryoneSearch"] {
   content-visibility: hidden;
 }
 
+/* Outer shells already fit ~500. Do not keep unlocking #login-panel-new.
+ * Clip leftover overflow until the inner article shrinks. */
+html.pcwtm #login-panel-new,
+html.pcwtm #douyin-login-new-id {
+  overflow-x: hidden;
+  z-index: 10120;
+}
+
+/* Inner desktop two-column (QA: 726) is the overflow. Stack / drop QR. */
+html.pcwtm article#douyin_login_comp_flat_panel,
+html.pcwtm article#douyin_login_comp_flat_panel > *,
+html.pcwtm article#douyin_login_comp_flat_panel > * > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+html.pcwtm article#douyin_login_comp_flat_panel {
+  width: 100% !important;
+  max-width: 100vw !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  overflow-x: hidden !important;
+}
+
+html.pcwtm #douyin_login_comp_scan_code {
+  display: none !important;
+}
+
+html.pcwtm article#douyin_login_comp_flat_panel #douyin_login_comp_single_panel,
+html.pcwtm #douyin_login_comp_single_panel {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
 html.pcwtm [role="dialog"],
 html.pcwtm .semi-modal,
-html.pcwtm #login-panel-new,
 html.pcwtm #login-pannel,
-html.pcwtm #douyin-login-new-id,
-html.pcwtm #douyin_login_comp_single_panel,
 html.pcwtm [data-e2e="recommend-guide-mask"],
 html.pcwtm #douyin-web-recommend-guide-mask {
   max-width: 100vw !important;

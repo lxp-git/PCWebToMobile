@@ -128,12 +128,14 @@
   function decorateHref(href) {
     return mutateHref(href, function (u) {
       keepPcwtm(u);
-      stabilizeRecommend(u);
     });
   }
 
   function recommendHref() {
-    return decorateHref(RECOMMEND_HREF);
+    return mutateHref(RECOMMEND_HREF, function (u) {
+      keepPcwtm(u);
+      stabilizeRecommend(u);
+    });
   }
 
   function samePlace(href) {
@@ -183,7 +185,6 @@
       var u = new URL(location.href);
       var before = u.href;
       if (flag === "1" || flag === "0") u.searchParams.set(PCWTM_KEY, flag);
-      if (wantMobile()) stabilizeRecommend(u);
       if (u.href !== before) location.replace(u.pathname + u.search + u.hash);
     } catch (e) {}
   }
