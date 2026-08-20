@@ -759,13 +759,17 @@ html.pcwtm article#douyin_login_comp_flat_panel:not(:has(#douyin_login_comp_mobi
   max-width: none !important;
 }
 
-/* Empty captcha shell sits on the title-row X (live elementFromPoint). */
-html.pcwtm #captcha_container:not(:has(iframe)):not(:has(canvas)) {
+/* Live e2p at the「Douyin」title-end pixel AND at the official 37×36
+ * close svg center both hit #captcha_container (not the closer). The
+ * shell often has a hidden iframe so :not(:has(iframe)) never applied.
+ * Container does not receive hits. A real captcha iframe/canvas keeps
+ * the UA default (auto) and still works through a none parent. Do not
+ * force auto on the iframe — a full-bleed empty shell would sit on the X. */
+html.pcwtm #captcha_container {
   pointer-events: none !important;
 }
 
 /* Official title-row closer — restore hits we previously swallowed. */
-html.pcwtm #douyin_login_comp_flat_panel_title,
 html.pcwtm #douyin_login_comp_flat_panel_title ~ *,
 html.pcwtm #douyin_login_comp_flat_panel_title ~ * *,
 html.pcwtm article#douyin_login_comp_flat_panel,
@@ -782,6 +786,27 @@ html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel,
 html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel *,
 html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code,
 html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code * {
+  pointer-events: auto !important;
+}
+
+/* Live 390: title #douyin_login_comp_flat_panel_title is x=105..285,
+ * official closer is the only sibling (DIV > 37×36 svg at x=331..368).
+ * QA taps the faint X at the title end. e2p there is the title DIV
+ * (no button, no <a>, not a logo link). Svg-center e2p is path.
+ * Expanding the sibling DIV's padding made title-end hit the wrapper;
+ * a click on that padding did not dismiss — the handler is on the svg.
+ * Extend the official svg's own box left. Title is not a control.
+ * Must beat article * / #login-panel-new #flat * pe:auto above. */
+html.pcwtm #login-panel-new article#douyin_login_comp_flat_panel #douyin_login_comp_flat_panel_title,
+html.pcwtm #douyin-login-new-id article#douyin_login_comp_flat_panel #douyin_login_comp_flat_panel_title {
+  pointer-events: none !important;
+}
+html.pcwtm #login-panel-new article#douyin_login_comp_flat_panel #douyin_login_comp_flat_panel_title ~ * svg,
+html.pcwtm #douyin-login-new-id article#douyin_login_comp_flat_panel #douyin_login_comp_flat_panel_title ~ * svg {
+  box-sizing: content-box !important;
+  padding-left: 56px !important;
+  margin-left: -56px !important;
+  overflow: visible !important;
   pointer-events: auto !important;
 }
 

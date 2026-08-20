@@ -894,6 +894,7 @@
       function (e) {
         var t = e.target;
         if (!t || !t.closest) return;
+        if (isLoginWallNode(t)) return;
         if (
           !t.closest(
             "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='feed-comment-icon'], [data-e2e='comment-list'], [data-e2e='video-detail'], [data-e2e='feed-video'], [data-e2e='feed-active-video'], .pcwtm-active-aweme, #sliderVideo, .xgplayer, .positionBox"
@@ -1510,9 +1511,12 @@
 
   function onSameOriginClick(e) {
     var t = e.target;
-    /* Official login X is often aria-label=关闭. Do not steal that click
-     * as 返回 — preventDefault left the white card painted. */
-    if (wantMobile() && isVideoPath() && t && t.closest && !isLoginWallNode(t)) {
+    /* Login wall: do not capture. Official closer must receive the click.
+     * Live e2p at the「Douyin」title-end X: title DIV or closer svg/path,
+     * not a logo <a>. Agreement / jingxuan links under the same card
+     * still hit shouldHijackLeave if we fall through. */
+    if (isLoginWallNode(t)) return;
+    if (wantMobile() && isVideoPath() && t && t.closest) {
       var back = t.closest("a, button, [role='button']");
       if (back && !back.closest("#pcwtm-drawer") && !isOfficialSwitch(back) && !isLoginWallNode(back)) {
         var backLabel = labelOf(back);
