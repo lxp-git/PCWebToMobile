@@ -640,6 +640,16 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="video-comment-more"] {
   z-index: 1;
 }
 
+/* Official related-card login guide sits on the comment list and
+ * blocks comment-item / video-comment-more. Hide the overlay only;
+ * #login-panel-new stays. Do not reimplement expand. */
+html.pcwtm.pcwtm-comments #related-video-card-login-guide,
+html.pcwtm.pcwtm-comments .related-video-card-login-guide {
+  display: none !important;
+  content-visibility: hidden;
+  pointer-events: none !important;
+}
+
 /* ---------- Video detail /video/:id ---------- */
 
 html.pcwtm [data-e2e="video-detail"] {
