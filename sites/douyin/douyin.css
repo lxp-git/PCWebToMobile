@@ -640,18 +640,21 @@ html.pcwtm .xgplayer-playswitch {
  * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay
  * in the DOM at width 0. :has() would keep this block applied.
  *
- * Live recommend /?recommend=1 390×844 (柯码 hunch 核过，不当定论):
- *   sheet height = --pcwtm-sheet (420). merge max-height 同一变量 → 418。
- *   comment-list 官方已是 display:flex; flex:1 1 auto，高 294，
- *   scrollH===clientH，0 个子节点，树上没有 overflow:hidden 的内层。
- *   同高裁的是 merge↔sheet，不是 html/body，也不是 bindFeedSwipe
- *   (passive，已排除 comment-list)。
- * Sheet 只当列：flex column，overflow hidden 裁铬。滚口留给
- * #merge-all-comment-container / [data-e2e=comment-list]
- * (flex:1; min-height:0; max-height:none; overflow-y:auto)。
- * 别给整棵子孙加 overflow。#relatedVideoCard 官方已是 flex+absolute，
- * 只传 min-height:0，不加 overflow。comment-list > * 未开滚 —
- * live 没有更高的那一层。 */
+ * Live 2026-08-20 /?recommend=1 390×844，开评且项已挂上（不当定论）:
+ *   头栏「全部评论(12612)」+「登录后查看更多评论」。树里 6 条
+ *   comment-item，不是 12612。接口 /comment/list count=10 → n=9、
+ *   total=17020。齐验 392 条是头栏数字，不是树上节点。
+ *   sheet 420 / 476 / 419 overflow hidden（只裁铬）。
+ *   #relatedVideoCard 419 / 476 / 419 overflow visible。
+ *   #merge-all-comment-container 418 / 418 / 418 overflow-y auto
+ *     ← 不是滚口，sh===ch，不再给它 overflow。
+ *   [data-e2e=comment-list] 294 / 825 / 294 overflow-y auto
+ *     ← 唯一 sh>ch 的官方列表。官方关层残留时是 hidden scroll。
+ *   comment-list > * 各 sh===ch、overflow visible，不开滚。
+ *   开评帧 hiddenTaller（w>20 且 sh>ch 且 oy hidden）：空。
+ *   项未挂上时 list 294===294，看起来像滚不动（登录墙帧）。
+ * Sheet 只当列。flex 传给 merge / list；overflow-y:auto 只给
+ * comment-list。别给整棵子孙加 overflow。 */
 html.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,
 html.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
@@ -794,12 +797,18 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-list"] {
   flex: 1 1 0 !important;
   min-height: 0 !important;
   max-height: none !important;
+  pointer-events: auto !important;
+}
+
+/* Live: only comment-list is scrollH>clientH (825>294). merge is 418===418. */
+html.pcwtm.pcwtm-comments #videoSideCard [data-e2e="comment-list"],
+html.pcwtm.pcwtm-comments #videoSideBar [data-e2e="comment-list"],
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-list"] {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
-  pointer-events: auto !important;
 }
 
 html.pcwtm [data-e2e="comment-item"] {

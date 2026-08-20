@@ -65,7 +65,7 @@
 <body>
   <h1>抖音 · 手机 UI</h1>
   <p>PC 站的功能，手机的布局。CSS 改样式，不抓内容。</p>
-    <p class="muted"><strong>v0.2.8</strong>：推荐流官方评论列表能滚。底栏改 flex 列，<code>#merge-all-comment-container</code> / <code>[data-e2e=comment-list]</code> 用 <code>flex:1; min-height:0; max-height:none; overflow-y:auto</code>，不再和宿主同高被裁。关层后竖滑还在。0.2.7 详情下一条、0.2.6 精选返回按原样。</p>
+    <p class="muted"><strong>v0.2.8</strong>：推荐流官方评论列表。底栏 flex 列；<code>overflow-y:auto</code> 只给 <code>[data-e2e=comment-list]</code>（live 825&gt;294）。<code>#merge-all-comment-container</code> 只传 flex，不加 overflow（live 418===418）。未登录头栏条数不是树上节点。0.2.7 详情下一条、0.2.6 精选返回按原样。</p>
   <a class="dl" href="douyin.user.js" download="douyin.user.js">下载脚本</a>
   <ol>
     <li>点上面按钮，把脚本全文复制到 iOS <strong>Alook</strong> → 脚本，启用。已装过旧版的请删掉再贴一次。</li>

@@ -55,7 +55,7 @@ python3 sites/bilibili/build.py
 - 推荐页入口是 `/?recommend=1&from_nav=1`（菜单「推荐 / For You」带上 `pcwtm`）。官网可能会改掉 `from_nav`，脚本只保证 `pcwtm` 还在
 - 未登录登录墙：收掉左侧二维码列，把 `article#douyin_login_comp_flat_panel` 锁在视口宽里，官网关闭 X 留在屏内。没有另做关闭按钮
 - 推荐竖滑：视频铺满屏，顶栏收掉，只留一层薄菜单；点赞/评论/收藏/分享仍是官网自己的控件
-- 推荐流官方评论层：开/关仍是官网自己的。底栏 `display:flex` 列，`#merge-all-comment-container` / `[data-e2e=comment-list]` `flex:1; min-height:0; max-height:none; overflow-y:auto`，不再和宿主同高被裁。关层后竖滑还在。没有另造评论 UI、没有滚动 JS
+- 推荐流官方评论层：开/关仍是官网自己的。底栏 `display:flex` 列；`overflow-y:auto` 只给 `[data-e2e=comment-list]`（开评且项已挂上时 live `825>294`）。`#merge-all-comment-container` 只传 `flex:1; min-height:0`，不加 overflow（live `418===418`）。未登录头栏「全部评论(N)」不是树上节点。没有另造评论 UI、没有滚动 JS
 - 直接打开 `/video/:id` 后浏览器返回（以及官网「返回」）会落到精选电脑版。脚本在离开详情时记下，下一页若是 `/`、`/jingxuan` 或精选网格，就 `replace` 到 `/?recommend=1&from_nav=1`（带 `pcwtm`）。菜单里点「精选」仍去精选
 - `/video/:id` 详情流滑到下一条时，评论开/关跟着当前条，不再钉死第一条的 `#videoSideCard` / `comment-list` / `feed-comment-icon`
 - 未登录打开 `/` 现在常先落到精选：网格收成单列（精选本身不承诺）；要上下滑请点菜单里的「推荐」
