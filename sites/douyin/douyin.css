@@ -1,0 +1,393 @@
+/* PCWebToMobile · douyin
+ * Applied under html.pcwtm (userscript) or @media (max-width: 920px) (Stylus).
+ * Layout only — keep Douyin's own colors, type, player, and comments.
+ *
+ * Selectors verified from the official PC shell (IDs + data-e2e) as of 2026:
+ * #douyin-right-container, #douyin-header, #slidelist, #sliderVideo, #slideMode,
+ * #videoSideBar / #videoSideCard, #video-info-wrap, #relatedVideoCard,
+ * [data-e2e="douyin-navigation"|"feed-active-video"|"feed-video"|"comment-list"|
+ * "video-detail"|"player-container"|"searchbar-input"].
+ * Hashed class names (e.g. .N_HNXA04) are avoided — they rotate.
+ */
+
+html.pcwtm {
+  --pcwtm-bar: 52px;
+  --pcwtm-pink: #fe2c55;
+  --pcwtm-text: #161823;
+  --pcwtm-muted: #8a8b91;
+  --pcwtm-bg: #000;
+  --pcwtm-gap: 8px;
+  --header-height: var(--pcwtm-bar);
+}
+
+html.pcwtm,
+html.pcwtm body {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow-x: hidden !important;
+  background: var(--pcwtm-bg);
+}
+
+html.pcwtm body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Shells that lock a desktop min-width */
+html.pcwtm #root,
+html.pcwtm #douyin-right-container,
+html.pcwtm #douyin-header,
+html.pcwtm #slidelist,
+html.pcwtm #sliderVideo,
+html.pcwtm #slideMode,
+html.pcwtm .parent-route-container,
+html.pcwtm .route-scroll-container,
+html.pcwtm .page-recommend-container,
+html.pcwtm .playerContainer,
+html.pcwtm .basePlayerContainer,
+html.pcwtm .leftContainer,
+html.pcwtm [data-e2e="video-detail"],
+html.pcwtm [data-e2e="slideList"],
+html.pcwtm [data-e2e="player-container"] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* ---------- Left nav → drawer ---------- */
+
+html.pcwtm [data-e2e="douyin-navigation"] {
+  display: none !important;
+}
+
+/* ---------- Header ---------- */
+
+html.pcwtm #douyin-header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: var(--pcwtm-bar) !important;
+  min-height: var(--pcwtm-bar) !important;
+  max-height: var(--pcwtm-bar) !important;
+  margin: 0 !important;
+  padding: 0 6px 0 8px !important;
+  z-index: 10050 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(22, 24, 35, 0.88) !important;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+html.pcwtm #douyin-header > div,
+html.pcwtm #douyin-header > div[data-click="doubleClick"] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+}
+
+html.pcwtm #douyin-header input[data-e2e="searchbar-input"],
+html.pcwtm #douyin-header input[type="search"],
+html.pcwtm #douyin-header input[type="text"] {
+  font-size: 16px !important; /* iOS no-zoom */
+  min-width: 0 !important;
+}
+
+html.pcwtm #douyin-header [id^="douyin-header-menu"] {
+  flex: 0 0 auto !important;
+}
+
+html.pcwtm #pcwtm-menu-btn {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: 10px;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+html.pcwtm #pcwtm-menu-btn.pcwtm-float {
+  position: fixed;
+  top: calc(8px + env(safe-area-inset-top));
+  right: 8px;
+  z-index: 10080;
+  background: rgba(22, 24, 35, 0.72);
+}
+
+html.pcwtm #pcwtm-menu-btn:active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+html.pcwtm #pcwtm-mask {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10060;
+  background: rgba(0, 0, 0, 0.48);
+}
+
+html.pcwtm.pcwtm-open #pcwtm-mask {
+  display: block;
+}
+
+html.pcwtm #pcwtm-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(82vw, 320px);
+  z-index: 10070;
+  background: #161823;
+  color: #fff;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.28);
+  transform: translateX(105%);
+  transition: transform 0.22s ease;
+  overflow-y: auto;
+  padding: calc(12px + env(safe-area-inset-top)) 8px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.pcwtm.pcwtm-open #pcwtm-drawer {
+  transform: translateX(0);
+}
+
+html.pcwtm #pcwtm-drawer a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+html.pcwtm #pcwtm-drawer a:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.pcwtm #pcwtm-drawer .pcwtm-drawer-title {
+  padding: 8px 14px 14px;
+  font-size: 13px;
+  color: var(--pcwtm-muted);
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Homepage recommend slider ---------- */
+
+html.pcwtm #douyin-right-container {
+  margin: 0 !important;
+  padding: 0 !important;
+  left: 0 !important;
+}
+
+html.pcwtm #slidelist,
+html.pcwtm [data-e2e="slideList"] {
+  width: 100% !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  padding-right: 0 !important;
+}
+
+html.pcwtm #slidelist .page-recommend-container,
+html.pcwtm #sliderVideo,
+html.pcwtm #slideMode,
+html.pcwtm [data-e2e="feed-active-video"],
+html.pcwtm [data-e2e="feed-video"],
+html.pcwtm .sliderVideo,
+html.pcwtm .slider-video {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+}
+
+html.pcwtm #sliderVideo .playerContainer,
+html.pcwtm #slideMode .playerContainer,
+html.pcwtm [data-e2e="feed-active-video"] .playerContainer,
+html.pcwtm [data-e2e="feed-video"] .playerContainer,
+html.pcwtm .basePlayerContainer,
+html.pcwtm .xgplayer,
+html.pcwtm .xgplayer-container,
+html.pcwtm [data-e2e="player-container"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  left: 0 !important;
+}
+
+html.pcwtm .xgplayer video,
+html.pcwtm .basePlayerContainer video {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  object-fit: contain;
+}
+
+/* Right action column stays over the player */
+html.pcwtm .basePlayerContainer .positionBox {
+  position: absolute !important;
+  right: 6px !important;
+  bottom: calc(88px + env(safe-area-inset-bottom)) !important;
+  left: auto !important;
+  transform: none !important;
+  z-index: 5;
+}
+
+html.pcwtm #video-info-wrap,
+html.pcwtm .video-info-detail,
+html.pcwtm [data-e2e="video-info"] {
+  max-width: calc(100% - 72px) !important;
+  left: 8px !important;
+  right: auto !important;
+  bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+}
+
+/* Comments / related card: bottom sheet on the feed */
+html.pcwtm #sliderVideo[data-e2e="feed-active-video"] #videoSideBar,
+html.pcwtm #slideMode[data-e2e="feed-active-video"] #videoSideBar,
+html.pcwtm #sliderVideo[data-e2e="feed-active-video"] #videoSideCard,
+html.pcwtm #slideMode[data-e2e="feed-active-video"] #videoSideCard,
+html.pcwtm [data-e2e="feed-active-video"] #videoSideBar,
+html.pcwtm [data-e2e="feed-active-video"] #videoSideCard {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 72% !important;
+  max-height: 72dvh !important;
+  background: rgba(22, 24, 35, 0.96) !important;
+  z-index: 20 !important;
+  overflow: hidden !important;
+}
+
+html.pcwtm #relatedVideoCard,
+html.pcwtm .comment-mainContent[data-e2e="comment-list"],
+html.pcwtm [data-e2e="comment-list"] {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+html.pcwtm [data-e2e="comment-item"] {
+  max-width: 100% !important;
+}
+
+/* ---------- Video detail /video/:id ---------- */
+
+html.pcwtm [data-e2e="video-detail"] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  min-height: 100dvh !important;
+}
+
+html.pcwtm [data-e2e="video-detail"] .leftContainer {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+}
+
+html.pcwtm [data-e2e="video-detail"] [data-e2e="player-container"],
+html.pcwtm [data-e2e="video-detail"] .basePlayerContainer,
+html.pcwtm [data-e2e="video-detail"] .xgplayer {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 56vw !important;
+  aspect-ratio: 9 / 16;
+  max-height: 70dvh !important;
+  background: #000;
+}
+
+html.pcwtm [data-e2e="video-detail"] .leftContainer > div:has(.comment-mainContent[data-e2e="comment-list"]),
+html.pcwtm [data-e2e="video-detail"] .leftContainer > div > div:has(.comment-mainContent[data-e2e="comment-list"]),
+html.pcwtm [data-e2e="video-detail"] #videoSideBar,
+html.pcwtm [data-e2e="video-detail"] #videoSideCard {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 40vh !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+}
+
+html.pcwtm [data-e2e="comment-input"],
+html.pcwtm textarea,
+html.pcwtm input[placeholder*="评论"] {
+  font-size: 16px !important;
+}
+
+/* ---------- 精选 / jingxuan grid → single column ---------- */
+
+html.pcwtm #douyin-right-container ul[data-e2e="scroll-list"],
+html.pcwtm #search-result-container ul[data-e2e="scroll-list"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  width: 100% !important;
+  padding: 8px var(--pcwtm-gap) 72px !important;
+  box-sizing: border-box !important;
+}
+
+html.pcwtm #douyin-right-container ul[data-e2e="scroll-list"] > li,
+html.pcwtm #search-result-container ul[data-e2e="scroll-list"] > li,
+html.pcwtm .search-result-card {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* modal_id overlay player */
+html.pcwtm [class*="isCssFullScreen"] #slidelist,
+html.pcwtm #slidelist[class*="isCssFullScreen"] {
+  height: 100dvh !important;
+}
+
+/* ---------- Hide download / get-app chrome, keep login ---------- */
+
+html.pcwtm img#douyin-temp-sidebar,
+html.pcwtm a[href*="apps.apple.com"],
+html.pcwtm a[href*="itunes.apple.com"],
+html.pcwtm [class*="get_app"],
+html.pcwtm [class*="get-app"] {
+  display: none !important;
+}
+
+/* ---------- Search / profile: global min-width only ---------- */
+
+html.pcwtm #search-content-area,
+html.pcwtm #search-content-area > div,
+html.pcwtm #search-result-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* WAF / logged-out challenge shell: just unlock width */
+html.pcwtm body:has(script[src*="waf-jschallenge"]) {
+  min-width: 0 !important;
+}
