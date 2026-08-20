@@ -41,6 +41,7 @@
   var detailTrapPushes = 0;
   var lastAwemeKey = "";
   var suppressSheetUntil = 0;
+  var closingSheet = false;
 
   function store(key, value) {
     try {
@@ -727,17 +728,30 @@
         if (leftover[i].style) leftover[i].style.transform = "";
       }
       dismissOfficialPanels();
+      suppressSheetUntil = Date.now() + 700;
     }
     return swapped;
   }
 
   function dismissOfficialPanels() {
-    var panels = commentSidePanels();
-    var i;
-    for (i = 0; i < panels.length; i++) {
-      if ((panels[i].offsetWidth || 0) <= 48) continue;
-      var closer = findOfficialClose(panels[i]);
-      if (closer) closer.click();
+    closingSheet = true;
+    try {
+      var panels = commentSidePanels();
+      var i;
+      for (i = 0; i < panels.length; i++) {
+        var panel = panels[i];
+        if ((panel.offsetWidth || 0) <= 48) continue;
+        var closer = findOfficialClose(panel);
+        if (closer) closer.click();
+        if ((panel.offsetWidth || 0) <= 48) continue;
+        var owner = panelOwner(panel) || panel;
+        var icon =
+          (owner.querySelector && owner.querySelector("[data-e2e='feed-comment-icon']")) ||
+          document.querySelector("[data-e2e='feed-comment-icon']");
+        if (icon) icon.click();
+      }
+    } finally {
+      closingSheet = false;
     }
   }
 
@@ -886,7 +900,7 @@
           )
         )
           return;
-        if (t.closest("[data-e2e='feed-comment-icon']")) suppressSheetUntil = 0;
+        if (!closingSheet && t.closest("[data-e2e='feed-comment-icon']")) suppressSheetUntil = 0;
         setTimeout(syncCommentSheet, 50);
         setTimeout(syncCommentSheet, 250);
         setTimeout(syncCommentSheet, 600);
