@@ -24,6 +24,8 @@
   var WATCH_MS = 2000;
   var PCWTM_KEY = "pcwtm";
   var ON_VIDEO_KEY = "pcwtm-on-video";
+  var LAST_KIND_KEY = "pcwtm-last-kind";
+  var RECOVER_N_KEY = "pcwtm-recover-n";
   var STAY_JX_KEY = "pcwtm-stay-jingxuan";
   var RECOMMEND_HREF = "https://www.douyin.com/?recommend=1&from_nav=1";
 
@@ -44,6 +46,8 @@
   var rootObservers = [];
   var observedRoots = [];
   var historyPatched = false;
+  var leaveBound = false;
+  var navBound = false;
 
   function store(key, value) {
     try {
@@ -59,6 +63,15 @@
       return null;
     }
   }
+
+  /* First-load direct /video/:id: mark before apply / wantMobile / paint. */
+  try {
+    if ((location.pathname || "").indexOf("/video/") === 0) {
+      sessionStorage.removeItem(STAY_JX_KEY);
+      sessionStorage.setItem(ON_VIDEO_KEY, "1");
+      sessionStorage.setItem(LAST_KIND_KEY, "video");
+    }
+  } catch (e0) {}
 
   function queryPcwtm() {
     try {
@@ -127,7 +140,7 @@
   function shouldHijackLeave(href) {
     if (load(STAY_JX_KEY) === "1") return false;
     if (!wantMobile() && rememberPcwtm() !== "1") return false;
-    if (!isVideoPath() && load(ON_VIDEO_KEY) !== "1") return false;
+    if (!isVideoPath() && !cameFromVideo()) return false;
     return isDumpDest(href);
   }
 
@@ -222,33 +235,86 @@
     else location.assign(href);
   }
 
+  /* Cold /video/:id + browser Back: write the mark at document-start and
+   * again on pagehide. Recover must not wait for apply() / wantMobile(). */
+  function persistVideoMark() {
+    if (!isVideoPath()) return;
+    store(STAY_JX_KEY, null);
+    store(ON_VIDEO_KEY, "1");
+    store(LAST_KIND_KEY, "video");
+    store(RECOVER_N_KEY, null);
+  }
+
   function rememberVideoPage() {
-    if (isVideoPath()) {
-      store(STAY_JX_KEY, null);
-      store(ON_VIDEO_KEY, "1");
-    }
+    persistVideoMark();
+    if (isVideoPath()) return;
+    try {
+      if (isRecommendUrl(new URL(location.href))) {
+        store(LAST_KIND_KEY, "recommend");
+        return;
+      }
+    } catch (e) {}
   }
 
   function clearVideoMark() {
     store(ON_VIDEO_KEY, null);
+    store(RECOVER_N_KEY, null);
+    if (load(LAST_KIND_KEY) === "video") store(LAST_KIND_KEY, "recommend");
   }
 
   function allowJingxuanNav() {
     store(ON_VIDEO_KEY, null);
+    store(RECOVER_N_KEY, null);
+    store(LAST_KIND_KEY, "jingxuan");
     store(STAY_JX_KEY, "1");
+  }
+
+  function referrerWasVideo() {
+    try {
+      if (!document.referrer) return false;
+      var u = new URL(document.referrer);
+      if (!isWwwDouyin(u) && String(u.hostname).indexOf("douyin.com") === -1) return false;
+      return isVideoPath(u.pathname);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function cameFromVideo() {
+    if (load(STAY_JX_KEY) === "1") return false;
+    if (load(ON_VIDEO_KEY) === "1") return true;
+    if (load(LAST_KIND_KEY) === "video") return true;
+    return referrerWasVideo();
+  }
+
+  function recommendFeedReady() {
+    try {
+      if (!isRecommendUrl(new URL(location.href))) return false;
+    } catch (e) {
+      return false;
+    }
+    return !!document.getElementById("slidelist");
   }
 
   function recoverVideoBack() {
     if (load(STAY_JX_KEY) === "1") return false;
-    if (load(ON_VIDEO_KEY) !== "1") return false;
-    if (isVideoPath()) return false;
+    if (!wantMobile() && rememberPcwtm() !== "1") return false;
+    if (isVideoPath()) {
+      persistVideoMark();
+      return false;
+    }
+    if (recommendFeedReady()) {
+      clearVideoMark();
+      return false;
+    }
     try {
-      if (isRecommendUrl(new URL(location.href))) {
-        clearVideoMark();
-        return false;
-      }
+      if (isRecommendUrl(new URL(location.href))) return false;
     } catch (e) {}
+    if (!cameFromVideo()) return false;
     if (!isJingxuanDesktopLanding()) return false;
+    var n = parseInt(load(RECOVER_N_KEY) || "0", 10);
+    if (n >= 2) return false;
+    store(RECOVER_N_KEY, String(n + 1));
     goRecommend(true);
     return true;
   }
@@ -883,10 +949,64 @@
   }
 
   function onPopState() {
+    persistVideoMark();
     setTimeout(function () {
       if (!recoverVideoBack()) onNavigate();
     }, 0);
+    setTimeout(recoverVideoBack, 80);
     setTimeout(recoverVideoBack, 300);
+  }
+
+  function bindTraverseIntercept() {
+    if (navBound) return;
+    if (!window.navigation || typeof window.navigation.addEventListener !== "function") return;
+    navBound = true;
+    window.navigation.addEventListener("navigate", function (e) {
+      if (load(STAY_JX_KEY) === "1") return;
+      if (!wantMobile() && rememberPcwtm() !== "1") return;
+      if (e.navigationType !== "traverse") return;
+      var dest = "";
+      try {
+        dest = e.destination && e.destination.url;
+      } catch (err) {
+        return;
+      }
+      if (!dest) return;
+      if (!isVideoPath() && !cameFromVideo()) return;
+      if (!isDumpDest(dest)) return;
+      persistVideoMark();
+      if (!e.canIntercept) {
+        setTimeout(recoverVideoBack, 0);
+        return;
+      }
+      try {
+        e.intercept({
+          handler: function () {
+            location.replace(recommendHref());
+          },
+        });
+      } catch (err2) {
+        setTimeout(recoverVideoBack, 0);
+      }
+    });
+  }
+
+  function bindLeaveHooks() {
+    if (leaveBound) return;
+    leaveBound = true;
+    persistVideoMark();
+    window.addEventListener("pagehide", persistVideoMark);
+    window.addEventListener("beforeunload", persistVideoMark);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") persistVideoMark();
+    });
+    window.addEventListener("popstate", onPopState);
+    window.addEventListener("pageshow", function () {
+      persistVideoMark();
+      if (recoverVideoBack()) return;
+      schedule();
+    });
+    bindTraverseIntercept();
   }
 
   function onSameOriginClick(e) {
@@ -952,7 +1072,6 @@
     connectSmallRoots();
     if (watching) return;
     watching = true;
-    window.addEventListener("popstate", onPopState);
     document.addEventListener("click", onSameOriginClick, true);
     intervalId = setInterval(function () {
       connectSmallRoots();
@@ -968,7 +1087,6 @@
     observedRoots = [];
     if (!watching) return;
     watching = false;
-    window.removeEventListener("popstate", onPopState);
     document.removeEventListener("click", onSameOriginClick, true);
     if (intervalId) {
       clearInterval(intervalId);
@@ -976,13 +1094,14 @@
     }
   }
 
+  bindLeaveHooks();
   rememberVideoPage();
   patchHistory();
   rewriteLanding();
   apply();
   sameTab();
-  document.addEventListener("DOMContentLoaded", schedule);
-  window.addEventListener("pageshow", function () {
+  document.addEventListener("DOMContentLoaded", function () {
+    persistVideoMark();
     if (recoverVideoBack()) return;
     schedule();
   });

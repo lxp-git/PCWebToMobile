@@ -55,7 +55,7 @@ python3 sites/bilibili/build.py
 - 推荐页入口是 `/?recommend=1&from_nav=1`（菜单「推荐 / For You」带上 `pcwtm`）。官网可能会改掉 `from_nav`，脚本只保证 `pcwtm` 还在
 - 未登录登录墙：收掉左侧二维码列，把 `article#douyin_login_comp_flat_panel` 锁在视口宽里，官网关闭 X 留在屏内。没有另做关闭按钮
 - 推荐竖滑：视频铺满屏，顶栏收掉，只留一层薄菜单；点赞/评论/收藏/分享仍是官网自己的控件
-- 详情页官网「返回」会跳到精选电脑版（不是 `history.back`）。脚本拦这条跳转并改去 `/?recommend=1&from_nav=1`（带 `pcwtm`）。菜单里点「精选」仍去精选
+- 直接打开 `/video/:id` 后浏览器返回（以及官网「返回」）会落到精选电脑版。脚本在离开详情时记下，下一页若是 `/`、`/jingxuan` 或精选网格，就 `replace` 到 `/?recommend=1&from_nav=1`（带 `pcwtm`）。菜单里点「精选」仍去精选
 - 未登录打开 `/` 现在常先落到精选：网格收成单列（精选本身不承诺）；要上下滑请点菜单里的「推荐」
 - 抽屉打开才扫一遍导航链接（`textContent`），不再对 `document` 做 subtree MutationObserver，也不在每帧跑 `innerText`
 
