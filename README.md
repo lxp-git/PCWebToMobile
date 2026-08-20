@@ -12,17 +12,21 @@
 
 ## 已有脚本
 
-| 站点 | 状态 | 安装 |
+| 站点 | 状态 | 下载 |
 | --- | --- | --- |
-| 哔哩哔哩 `www.bilibili.com` | 首页 + 播放页可用 | [bilibili.user.js](https://github.com/lxp-git/PCWebToMobile/raw/master/sites/bilibili/bilibili.user.js) |
+| 哔哩哔哩 `www.bilibili.com` | 首页 + 播放页可用 | [下载页](sites/bilibili/) · [bilibili.user.js](sites/bilibili/bilibili.user.js) |
 
-### 怎么装
+### 怎么用（iOS Alook）
 
-1. 手机用 Kiwi / Firefox / Edge Canary 等能装扩展的浏览器，装 [Tampermonkey](https://www.tampermonkey.net/) 或 Violentmonkey。
-2. 打开上表里的 `.user.js`，按提示安装。
-3. 访问对应网站时开「桌面版网站」，否则很多站会直接跳到 `m.*`，脚本挂不上。
+1. 打开上表的下载页，点「下载脚本」。
+2. 把脚本全文复制到 [Alook](https://apps.apple.com/app/alook%E6%B5%8F%E8%A7%88%E5%99%A8/id1407852470) → 脚本，启用。
+3. 用 Alook 打开对应网站的 **桌面版**（不要进 `m.*`）。
+
+之后就是 PC 站的功能，手机的 UI。
 
 `?pcwtm=1` 强制开，`?pcwtm=0` 强制关。宽屏桌面默认不改。
+
+其它能装油猴的浏览器（Kiwi / Firefox / Edge Canary + Tampermonkey / Violentmonkey）也可以直接装 `.user.js`。
 
 ### 哔哩哔哩 0.1.0
 
@@ -30,7 +34,7 @@
 
 - 首页：去掉 1100px 锁宽，顶栏搜索 + 头像 + 菜单，分区横滑，双列推荐
 - 播放页：播放器全宽 16:9，点赞投币收藏分享、评论、弹幕输入都还在
-- 菜单抽尉里仍能进历史、动态、投稿、创作中心等 PC 功能
+- 菜单抽屉里仍能进历史、动态、投稿、创作中心等 PC 功能
 - 站内链接尽量同页打开，不新开标签
 
 还没专门做：搜索结果页、空间、动态、直播、番剧播放页（脚本会挂上，但只有全局去 min-width）。
