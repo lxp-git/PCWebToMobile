@@ -1087,48 +1087,38 @@ html.pcwtm .pcwtm-sheet-panel [class*="EveryoneSearch"] {
   content-visibility: hidden;
 }
 
-/* Stretch/stack only WHILE the official wall is open. Do not set
- * display/width on #login-panel-new / #douyin-login-new-id — official
- * close leaves those ids at width 0 / hidden; display:flex !important
- * + width:100vw kept the white card painted after the X (title already
- * changed). Live 390 unskinned: those hosts are display:block; the
- * 726px row is article / landing (already flex). Constrain that row. */
-html.pcwtm #login-panel-new:has(#douyin_login_comp_mobile_code) #douyin_login_comp_flat_panel,
-html.pcwtm #login-panel-new:has(#douyin_login_comp_single_panel) #douyin_login_comp_flat_panel,
-html.pcwtm #login-panel-new:has(#douyin_login_comp_single_panel) #douyin_login_comp_single_panel,
-html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_mobile_code) #douyin_login_comp_flat_panel,
-html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_single_panel) #douyin_login_comp_flat_panel,
-html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_single_panel) #douyin_login_comp_single_panel,
-html.pcwtm #login-panel-new:has(#douyin_login_comp_mobile_code) #douyin_login_landing_flat_container,
-html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_mobile_code) #douyin_login_landing_flat_container,
-html.pcwtm #douyin_login_comp_flat_panel:has(#douyin_login_comp_mobile_code),
-html.pcwtm #douyin_login_landing_flat_container:has(#douyin_login_comp_mobile_code) {
+/* Official close is display:none or emptying children. QA: X clicked,
+ * title changed, white card stayed — because we set display:flex
+ * !important on these hosts. Stretch width only. Never set display. */
+html.pcwtm #login-panel-new,
+html.pcwtm #douyin-login-new-id,
+html.pcwtm article#douyin_login_comp_flat_panel {
   box-sizing: border-box !important;
-  width: 100% !important;
-  max-width: 100% !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
   min-width: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  left: auto !important;
-  right: auto !important;
-  flex-direction: column !important;
-  flex-wrap: nowrap !important;
-  overflow-x: hidden !important;
 }
 
-html.pcwtm #login-panel-new:has(#douyin_login_comp_mobile_code) #douyin_login_comp_flat_panel > *,
-html.pcwtm #login-panel-new:has(#douyin_login_comp_mobile_code) #douyin_login_comp_flat_panel > * > *,
-html.pcwtm #login-panel-new:has(#douyin_login_comp_mobile_code) #douyin_login_landing_flat_container > *,
-html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_mobile_code) #douyin_login_comp_flat_panel > *,
-html.pcwtm #douyin-login-new-id:has(#douyin_login_comp_mobile_code) #douyin_login_landing_flat_container > *,
-html.pcwtm #douyin_login_comp_single_panel:has(#douyin_login_comp_mobile_code) > * {
+/* Landing is already official flex. Stack the 253px phone column by
+ * width only — do not set display on the three hosts above. */
+html.pcwtm #douyin_login_landing_flat_container,
+html.pcwtm #douyin_login_comp_single_panel {
   box-sizing: border-box !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  flex: none !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+  flex-direction: column !important;
+}
+
+html.pcwtm #login-panel-new > *,
+html.pcwtm #douyin-login-new-id > *,
+html.pcwtm article#douyin_login_comp_flat_panel > *,
+html.pcwtm #douyin_login_landing_flat_container > *,
+html.pcwtm #douyin_login_comp_single_panel > * {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
 }
 
 /* QR nodes only. After close, leftover scan/guide ids stay in the DOM;
