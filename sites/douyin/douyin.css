@@ -33,7 +33,7 @@ html.pcwtm {
   --pcwtm-space: 8px;
   --pcwtm-radius: 8px;
   --pcwtm-bar: 48px;
-  --pcwtm-sheet: 56%;
+  --pcwtm-sheet: min(52dvh, 420px);
   --header-height: var(--pcwtm-bar);
   color-scheme: dark;
 }
@@ -417,7 +417,7 @@ html.pcwtm #videoSideBar:has([data-e2e="comment-list"]) {
   width: 100% !important;
   max-width: 100% !important;
   height: var(--pcwtm-sheet) !important;
-  max-height: 56dvh !important;
+  max-height: var(--pcwtm-sheet) !important;
   background: var(--pcwtm-elevated) !important;
   border-top: 1px solid var(--pcwtm-border);
   border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */
@@ -457,40 +457,34 @@ html.pcwtm:has(#videoSideBar:has(#relatedVideoCard, #merge-all-comment-container
   visibility: hidden !important;
 }
 
-/* Menu sits in the same top-right column as the official X — hide while open */
-html.pcwtm:has(#videoSideCard:has(#relatedVideoCard, #merge-all-comment-container, [data-e2e="comment-list"])) #pcwtm-menu-btn,
-html.pcwtm:has(#videoSideBar:has(#relatedVideoCard, #merge-all-comment-container, [data-e2e="comment-list"])) #pcwtm-menu-btn {
-  visibility: hidden;
-  pointer-events: none;
+/* Hamburger is not the comment close — park it top-left while the sheet is open */
+html.pcwtm:has(#videoSideCard:has([data-e2e="comment-list"])) #pcwtm-menu-btn.pcwtm-float,
+html.pcwtm:has(#videoSideBar:has([data-e2e="comment-list"])) #pcwtm-menu-btn.pcwtm-float {
+  right: auto;
+  left: calc(8px + env(safe-area-inset-left));
+  top: calc(8px + env(safe-area-inset-top));
+  visibility: visible;
+  pointer-events: auto;
 }
 
-/* Official X only: 44×44 tap target. No new button, no new chrome. */
+/* Official X only: 44×44 on the host node. Center the glyph in the hit box.
+ * No ::after overlay — that blocked the tab row. z-index above the tabs. */
 html.pcwtm .pcwtm-host-close {
   box-sizing: border-box !important;
   min-width: 44px !important;
   min-height: 44px !important;
-  padding: 10px !important;
+  padding: 0 !important;
   margin: 0 !important;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
+  display: grid !important;
+  place-items: center !important;
   pointer-events: auto !important;
   touch-action: manipulation;
   position: relative;
-  z-index: 3;
+  z-index: 6;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
   -webkit-tap-highlight-color: transparent;
-}
-
-html.pcwtm .pcwtm-host-close::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 44px;
-  height: 44px;
 }
 
 html.pcwtm .pcwtm-host-close svg {
@@ -577,7 +571,7 @@ html.pcwtm #videoSideCard #merge-all-comment-container,
 html.pcwtm #videoSideBar #merge-all-comment-container,
 html.pcwtm #videoSideCard [data-e2e="comment-list"],
 html.pcwtm #videoSideBar [data-e2e="comment-list"] {
-  max-height: calc(56dvh - 56px);
+  max-height: calc(var(--pcwtm-sheet) - 44px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
