@@ -456,7 +456,6 @@ html.pcwtm [data-e2e="video-player-share"] {
   min-height: var(--pcwtm-tap);
   visibility: visible !important;
   opacity: 1 !important;
-  cursor: pointer;
 }
 
 /* Official bottom player chrome (quality / speed / PiP / progress) covers watch.
@@ -668,21 +667,20 @@ html.pcwtm [data-e2e="comment-item"] {
   max-width: 100% !important;
 }
 
-/* Live 2026-08-20: #login-full-panel-* host is h=0 but its direct
- * position:fixed child covers the sheet and eats comment-item /
- * video-comment-more. Do not use :has(#login-panel-new) — that node
- * lives inside the same host. Keep official login JS; punch through
- * the dimmer and re-enable the real card. */
-html.pcwtm [id^="login-full-panel-"],
-html.pcwtm [id^="login-full-panel-"] > * {
+/* After official close, #login-full-panel-* / #login-panel-new stay in the
+ * DOM. :has(#login-panel-new) is still true — do not treat that as "wall
+ * open" and display:none a middle ancestor of .positionBox.
+ * Empty leftover overlays: pointer-events:none only. Never hide a wrapper
+ * that contains the official like/comment rail. */
+html.pcwtm [id^="login-full-panel-"]:not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
+  pointer-events: none !important;
+}
+html.pcwtm [id^="login-full-panel-"] > *:not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
   pointer-events: none !important;
 }
 
-/* Re-enable only the official card, not every leftover descendant.
- * Live after login X: #login-panel-new can stay display:flex / h=0 while a
- * middle layer with pointer-events:all still sits on the action rail. */
-html.pcwtm #login-panel-new *,
-html.pcwtm #douyin-login-new-id * {
+html.pcwtm #login-panel-new:not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])) *:not(#douyin_login_comp_flat_panel):not(#douyin_login_comp_single_panel):not(#douyin_login_comp_mobile_code),
+html.pcwtm #douyin-login-new-id:not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])) *:not(#douyin_login_comp_flat_panel):not(#douyin_login_comp_single_panel):not(#douyin_login_comp_mobile_code) {
   pointer-events: none !important;
 }
 html.pcwtm #login-panel-new #douyin_login_comp_flat_panel,
@@ -714,13 +712,11 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="video-comment-more"] {
   z-index: 1;
 }
 
-/* Official related-card login guide sits on the comment list and
- * blocks comment-item / video-comment-more. Hide the overlay only;
- * #login-panel-new stays. Do not reimplement expand. */
-html.pcwtm.pcwtm-comments #related-video-card-login-guide,
-html.pcwtm.pcwtm-comments .related-video-card-login-guide {
-  display: none !important;
-  content-visibility: hidden;
+/* Official related-card login guide stays in the DOM after close.
+ * pointer-events:none only — do not display:none (it may share an
+ * ancestor with the like/comment rail). */
+html.pcwtm #related-video-card-login-guide,
+html.pcwtm .related-video-card-login-guide {
   pointer-events: none !important;
 }
 
@@ -1003,23 +999,18 @@ html.pcwtm #douyin_login_landing_flat_container > * {
   margin-right: 0 !important;
 }
 
+/* QR nodes only. After close, leftover scan/guide ids stay in the DOM;
+ * :has(scan) on a parent must not display:none a wrapper that also
+ * holds .positionBox / like / comment. */
 html.pcwtm #douyin_login_comp_scan_code,
 html.pcwtm #animate_qrcode_container,
 html.pcwtm #default_scan_code_guide {
   display: none !important;
 }
-
-/* Hide a QR-only sibling. Do not hide a wrapper that also holds the phone. */
-html.pcwtm #login-panel-new > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
-html.pcwtm #douyin-login-new-id > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
-html.pcwtm #douyin_login_comp_flat_panel > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
-html.pcwtm #douyin_login_comp_single_panel > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)),
-html.pcwtm #douyin_login_landing_flat_container > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
-html.pcwtm #login-panel-new > *:has(#animate_qrcode_container):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
-html.pcwtm #douyin-login-new-id > *:has(#animate_qrcode_container):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
-html.pcwtm #douyin_login_landing_flat_container > *:has(#animate_qrcode_container):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)),
-html.pcwtm #douyin_login_landing_flat_container > *:not(#douyin_login_comp_mobile_code):not(#douyin_login_comp_single_panel):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)) {
-  display: none !important;
+html.pcwtm #login-panel-new > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])),
+html.pcwtm #douyin-login-new-id > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])),
+html.pcwtm #douyin_login_landing_flat_container > *:has(#douyin_login_comp_scan_code):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(.positionBox)):not(:has([data-e2e="feed-comment-icon"])) {
+  pointer-events: none !important;
 }
 
 html.pcwtm #login-panel-new *:has(#douyin_login_comp_mobile_code),
