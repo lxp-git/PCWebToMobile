@@ -639,14 +639,19 @@ html.pcwtm .xgplayer-playswitch {
 /* Bottom sheet only while html.pcwtm-comments (official side width > 0).
  * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay
  * in the DOM at width 0. :has() would keep this block applied.
- * Live recommend /?recommend=1 390×844: official list
- * ([data-e2e=comment-list]) is 294×294, scrollH===clientH — it is not
- * the scrollport. Overflow sits on #videoSideCard / #relatedVideoCard
- * (sheet 420 / client 419 / scrollH 476). overflow:hidden on this
- * host ate that overflow (scrollTop stuck). html/body were overflow-x
- * hidden + overflow-y auto, not overflow:hidden. 100dvh slidelist did
- * not clip this fixed sheet. Finger/wheel must reach this official
- * host — overflow-y:auto + pan-y, not hidden. */
+ *
+ * Live recommend /?recommend=1 390×844 (柯码 hunch 核过，不当定论):
+ *   sheet height = --pcwtm-sheet (420). merge max-height 同一变量 → 418。
+ *   comment-list 官方已是 display:flex; flex:1 1 auto，高 294，
+ *   scrollH===clientH，0 个子节点，树上没有 overflow:hidden 的内层。
+ *   同高裁的是 merge↔sheet，不是 html/body，也不是 bindFeedSwipe
+ *   (passive，已排除 comment-list)。
+ * Sheet 只当列：flex column，overflow hidden 裁铬。滚口留给
+ * #merge-all-comment-container / [data-e2e=comment-list]
+ * (flex:1; min-height:0; max-height:none; overflow-y:auto)。
+ * 别给整棵子孙加 overflow。#relatedVideoCard 官方已是 flex+absolute，
+ * 只传 min-height:0，不加 overflow。comment-list > * 未开滚 —
+ * live 没有更高的那一层。 */
 html.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,
 html.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
@@ -659,15 +664,14 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
   max-width: 100% !important;
   height: var(--pcwtm-sheet) !important;
   max-height: var(--pcwtm-sheet) !important;
+  display: flex !important;
+  flex-direction: column !important;
   background: var(--pcwtm-elevated) !important;
   border-top: 1px solid var(--pcwtm-border);
   border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */
   z-index: 10055 !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
+  overflow: hidden !important;
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
   padding: 0 0 env(safe-area-inset-bottom);
   box-sizing: border-box !important;
   pointer-events: auto !important;
@@ -769,13 +773,27 @@ html.pcwtm.pcwtm-comments [data-e2e="comment-list"] {
   max-width: 100% !important;
 }
 
+/* Official related card is already flex + absolute. Pass the column
+ * down one stable child — no overflow (not the scrollport). */
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel #relatedVideoCard,
+html.pcwtm.pcwtm-comments .pcwtm-sheet-panel #relatedVideoCard > * {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
 html.pcwtm.pcwtm-comments #videoSideCard #merge-all-comment-container,
 html.pcwtm.pcwtm-comments #videoSideBar #merge-all-comment-container,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel #merge-all-comment-container,
 html.pcwtm.pcwtm-comments #videoSideCard [data-e2e="comment-list"],
 html.pcwtm.pcwtm-comments #videoSideBar [data-e2e="comment-list"],
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-list"] {
-  max-height: var(--pcwtm-sheet);
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
