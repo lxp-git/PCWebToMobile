@@ -952,11 +952,34 @@ html.pcwtm #douyin_login_landing_flat_container > *:not(#douyin_login_comp_mobil
   display: none !important;
 }
 
-html.pcwtm #douyin_login_comp_mobile_code,
-html.pcwtm #douyin_login_comp_single_panel,
-html.pcwtm #douyin_login_comp_normal_input_id,
-html.pcwtm #douyin_login_comp_button_input_id,
-html.pcwtm #douyin_login_comp_btn_id {
+html.pcwtm #login-panel-new *:has(#douyin_login_comp_mobile_code),
+html.pcwtm #login-panel-new *:has(#douyin_login_comp_single_panel),
+html.pcwtm #douyin-login-new-id *:has(#douyin_login_comp_mobile_code),
+html.pcwtm #douyin-login-new-id *:has(#douyin_login_comp_single_panel),
+html.pcwtm #douyin_login_comp_flat_panel *:has(#douyin_login_comp_mobile_code),
+html.pcwtm #douyin_login_comp_flat_panel *:has(#douyin_login_comp_single_panel),
+html.pcwtm #douyin_login_landing_flat_container *:has(#douyin_login_comp_mobile_code),
+html.pcwtm #douyin_login_landing_flat_container *:has(#douyin_login_comp_single_panel),
+html.pcwtm #douyin_login_comp_single_panel *:has(#douyin_login_comp_mobile_code) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
+html.pcwtm #login-panel-new #douyin_login_comp_mobile_code,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code,
+html.pcwtm #douyin_login_comp_flat_panel #douyin_login_comp_mobile_code,
+html.pcwtm #douyin_login_landing_flat_container #douyin_login_comp_mobile_code,
+html.pcwtm #douyin_login_comp_single_panel #douyin_login_comp_mobile_code,
+html.pcwtm #login-panel-new #douyin_login_comp_single_panel,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel,
+html.pcwtm #douyin_login_comp_flat_panel #douyin_login_comp_single_panel,
+html.pcwtm #login-panel-new #douyin_login_comp_normal_input_id,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_normal_input_id,
+html.pcwtm #login-panel-new #douyin_login_comp_button_input_id,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_button_input_id,
+html.pcwtm #login-panel-new #douyin_login_comp_btn_id,
+html.pcwtm #douyin-login-new-id #douyin_login_comp_btn_id {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
