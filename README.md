@@ -15,7 +15,7 @@
 | 站点 | 状态 | 下载 |
 | --- | --- | --- |
 | 哔哩哔哩 `www.bilibili.com` | 首页 + 播放页可用 | [下载页](sites/bilibili/) · [bilibili.user.js](sites/bilibili/bilibili.user.js) |
-| 抖音 `www.douyin.com` | 首页上下滑 + 视频详情/评论 · 0.2.7 | [下载页](sites/douyin/) · [douyin.user.js](sites/douyin/douyin.user.js) |
+| 抖音 `www.douyin.com` | 首页上下滑 + 视频详情/评论 · 0.2.8 | [下载页](sites/douyin/) · [douyin.user.js](sites/douyin/douyin.user.js) |
 
 ### 怎么用（iOS Alook）
 
@@ -48,7 +48,7 @@ python3 sites/bilibili/build.py
 
 会重新生成可安装的 `bilibili.user.js`。
 
-### 抖音 0.2.7
+### 抖音 0.2.8
 
 已经能用：
 
@@ -57,6 +57,7 @@ python3 sites/bilibili/build.py
 - 推荐竖滑：视频铺满屏，顶栏收掉，只留一层薄菜单；点赞/评论/收藏/分享仍是官网自己的控件
 - 直接打开 `/video/:id` 后浏览器返回（以及官网「返回」）会落到精选电脑版。脚本在离开详情时记下，下一页若是 `/`、`/jingxuan` 或精选网格，就 `replace` 到 `/?recommend=1&from_nav=1`（带 `pcwtm`）。菜单里点「精选」仍去精选
 - `/video/:id` 详情流滑到下一条时，评论开/关跟着当前条，不再钉死第一条的 `#videoSideCard` / `comment-list` / `feed-comment-icon`
+- 推荐流开评（`/?recommend=1`、`/jingxuan?modal_id=` 弹层）：官网列表是滚口；评层打开时把滚轮/拖的位移交给当前可见 `[data-e2e=comment-list].scrollTop`，挡住 `#slidelist` 换片。精选首页不承诺。不承诺头栏评论数全部挂上
 - 未登录打开 `/` 现在常先落到精选：网格收成单列（精选本身不承诺）；要上下滑请点菜单里的「推荐」
 - 抽屉打开才扫一遍导航链接（`textContent`），不再对 `document` 做 subtree MutationObserver，也不在每帧跑 `innerText`
 

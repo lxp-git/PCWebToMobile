@@ -1232,16 +1232,132 @@
     syncCommentSheet();
   }
 
+  /* Official comment tree. Live: #videoSideCard sits inside #slidelist /
+   * #sliderVideo even when position:fixed. Hashed class names avoided.
+   * Login-wall / 「登录后查看更多」use stable ids / data-e2e only. */
+  var COMMENT_TREE =
+    "#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list'], [data-e2e='comment-item'], [data-e2e='video-comment-more'], #related-video-card-login-guide, .related-video-card-login-guide, .comment-input-un-login-container";
+
+  function commentTreeTarget(el) {
+    if (!el) return false;
+    if (el.nodeType === 3) el = el.parentNode;
+    return !!(el && el.closest && el.closest(COMMENT_TREE));
+  }
+
+  /* Product lock: /?recommend=1 and /jingxuan?modal_id= overlay only.
+   * Do not cover /jingxuan grid or 「精选电脑版」landing. Reuses
+   * isRecommendUrl — no jingxuan-homepage selectors. */
+  function onPromisedRecommendFeed() {
+    try {
+      var u = new URL(location.href);
+      if (isRecommendUrl(u)) return true;
+      if (u.searchParams.get("modal_id")) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  function commentsOpenOnTree(el) {
+    return (
+      document.documentElement.classList.contains("pcwtm-comments") &&
+      onPromisedRecommendFeed() &&
+      commentTreeTarget(el)
+    );
+  }
+
+  /* Step 1 — our swipe: bindFeedSwipe only has touchstart / touchend
+   * (bubble). We never bind wheel, so we are not the party eating the
+   * wheel. When html.pcwtm-comments and the gesture is on the official
+   * comment tree, do not click the official next/prev arrows. */
+
+  /* Live (10595bd, 390×844, /?pcwtm=1&recommend=1):
+   * #slidelist.wheel[0] is bubble, passive:false, preventDefault at once.
+   * Capture defaultPrevented is false; document-bubble is true. Official
+   * PD is after our capture. Capture-only SIP kept the event off the
+   * list (no default scroll) and off slidelist bubble (no swipe).
+   * 林初: comments open + promised path + comment-tree target → PD + SIP
+   * and add the delta to the visible official comment-list. No homemade
+   * layer / scrollbar. Closed comments: return; swipe hijack stays. */
+  var commentTouchY = 0;
+  var haveCommentTouchY = false;
+
+  function currentCommentList(from) {
+    var sheet;
+    var list;
+    if (from && from.nodeType === 3) from = from.parentNode;
+    if (from && from.closest) {
+      list = from.closest("[data-e2e='comment-list']");
+      if (list) return list;
+      sheet = from.closest(
+        "#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #relatedVideoCard, #merge-all-comment-container"
+      );
+      if (sheet) {
+        list = sheet.querySelector("[data-e2e='comment-list']");
+        if (list) return list;
+      }
+    }
+    sheet =
+      document.querySelector("#videoSideCard.pcwtm-sheet-panel") ||
+      document.querySelector(".pcwtm-sheet-panel");
+    if (sheet) {
+      list = sheet.querySelector("[data-e2e='comment-list']");
+      if (list) return list;
+    }
+    return null;
+  }
+
+  function rememberCommentTouch(e) {
+    if (!e.touches || !e.touches[0]) return;
+    commentTouchY = e.touches[0].clientY;
+    haveCommentTouchY = true;
+  }
+
+  function releaseSlideGestureOnComments(e) {
+    if (!commentsOpenOnTree(e.target)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var list = currentCommentList(e.target);
+    if (!list) return;
+    var dy = 0;
+    if (e.type === "wheel") {
+      dy = e.deltaY || 0;
+    } else if (e.touches && e.touches[0]) {
+      if (!haveCommentTouchY) {
+        commentTouchY = e.touches[0].clientY;
+        haveCommentTouchY = true;
+      } else {
+        dy = commentTouchY - e.touches[0].clientY;
+        commentTouchY = e.touches[0].clientY;
+      }
+    }
+    if (dy) list.scrollTop += dy;
+  }
+
+  function bindDocumentCommentShield() {
+    if (document.documentElement.getAttribute("data-pcwtm-cmtg") === "1") return;
+    document.documentElement.setAttribute("data-pcwtm-cmtg", "1");
+    var opts = { capture: true, passive: false };
+    document.addEventListener("wheel", releaseSlideGestureOnComments, opts);
+    document.addEventListener("touchmove", releaseSlideGestureOnComments, opts);
+    window.addEventListener("wheel", releaseSlideGestureOnComments, opts);
+    window.addEventListener("touchmove", releaseSlideGestureOnComments, opts);
+    var startOpts = { capture: true, passive: true };
+    document.addEventListener("touchstart", rememberCommentTouch, startOpts);
+    window.addEventListener("touchstart", rememberCommentTouch, startOpts);
+  }
+
   function bindFeedSwipe() {
     var list = document.getElementById("slidelist");
-    if (!list || list.getAttribute("data-pcwtm-swipe") === "1") return;
+    if (!list) return;
+    if (list.getAttribute("data-pcwtm-swipe") === "1") return;
     list.setAttribute("data-pcwtm-swipe", "1");
     var startY = 0;
     var startX = 0;
+    var skipOurSwipe = false;
     list.addEventListener(
       "touchstart",
       function (e) {
         if (!e.touches || !e.touches[0]) return;
+        skipOurSwipe = commentsOpenOnTree(e.target);
         startY = e.touches[0].clientY;
         startX = e.touches[0].clientX;
       },
@@ -1251,17 +1367,12 @@
       "touchend",
       function (e) {
         if (!e.changedTouches || !e.changedTouches[0]) return;
+        var ignore = skipOurSwipe || commentTreeTarget(e.target);
+        skipOurSwipe = false;
+        if (ignore) return;
         var dy = e.changedTouches[0].clientY - startY;
         var dx = e.changedTouches[0].clientX - startX;
         if (Math.abs(dy) < 60 || Math.abs(dy) < Math.abs(dx) * 1.4) return;
-        if (
-          e.target &&
-          e.target.closest &&
-          e.target.closest(
-            "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list']"
-          )
-        )
-          return;
         var sel =
           dy < 0
             ? '[data-e2e="video-switch-next-arrow"]'
@@ -1603,6 +1714,7 @@
     }
   }
 
+  bindDocumentCommentShield();
   bindLeaveHooks();
   rememberVideoPage();
   patchHistory();
