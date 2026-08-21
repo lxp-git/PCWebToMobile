@@ -1282,23 +1282,80 @@
    * wheel. When html.pcwtm-comments and the gesture is on the official
    * comment tree, do not click the official next/prev arrows. */
 
-  /* Step 2 — 54d6c22 live: slidelist/parent SIP did not cut a slidelist
-   * capture probe. Bind document + window capture once at load.
-   * Only SIP when html.pcwtm-comments + promised recommend feed +
-   * comment-tree target. No preventDefault, no scrollTop. */
+  /* Live (10595bd, 390×844, /?pcwtm=1&recommend=1):
+   * #slidelist.wheel[0] is bubble, passive:false, preventDefault at once.
+   * Capture defaultPrevented is false; document-bubble is true. Official
+   * PD is after our capture. Capture-only SIP kept the event off the
+   * list (no default scroll) and off slidelist bubble (no swipe).
+   * 林初: comments open + promised path + comment-tree target → PD + SIP
+   * and add the delta to the visible official comment-list. No homemade
+   * layer / scrollbar. Closed comments: return; swipe hijack stays. */
+  var commentTouchY = 0;
+  var haveCommentTouchY = false;
+
+  function currentCommentList(from) {
+    var sheet;
+    var list;
+    if (from && from.nodeType === 3) from = from.parentNode;
+    if (from && from.closest) {
+      list = from.closest("[data-e2e='comment-list']");
+      if (list) return list;
+      sheet = from.closest(
+        "#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #relatedVideoCard, #merge-all-comment-container"
+      );
+      if (sheet) {
+        list = sheet.querySelector("[data-e2e='comment-list']");
+        if (list) return list;
+      }
+    }
+    sheet =
+      document.querySelector("#videoSideCard.pcwtm-sheet-panel") ||
+      document.querySelector(".pcwtm-sheet-panel");
+    if (sheet) {
+      list = sheet.querySelector("[data-e2e='comment-list']");
+      if (list) return list;
+    }
+    return null;
+  }
+
+  function rememberCommentTouch(e) {
+    if (!e.touches || !e.touches[0]) return;
+    commentTouchY = e.touches[0].clientY;
+    haveCommentTouchY = true;
+  }
+
   function releaseSlideGestureOnComments(e) {
     if (!commentsOpenOnTree(e.target)) return;
+    e.preventDefault();
     e.stopImmediatePropagation();
+    var list = currentCommentList(e.target);
+    if (!list) return;
+    var dy = 0;
+    if (e.type === "wheel") {
+      dy = e.deltaY || 0;
+    } else if (e.touches && e.touches[0]) {
+      if (!haveCommentTouchY) {
+        commentTouchY = e.touches[0].clientY;
+        haveCommentTouchY = true;
+      } else {
+        dy = commentTouchY - e.touches[0].clientY;
+        commentTouchY = e.touches[0].clientY;
+      }
+    }
+    if (dy) list.scrollTop += dy;
   }
 
   function bindDocumentCommentShield() {
     if (document.documentElement.getAttribute("data-pcwtm-cmtg") === "1") return;
     document.documentElement.setAttribute("data-pcwtm-cmtg", "1");
-    var opts = { capture: true, passive: true };
+    var opts = { capture: true, passive: false };
     document.addEventListener("wheel", releaseSlideGestureOnComments, opts);
     document.addEventListener("touchmove", releaseSlideGestureOnComments, opts);
     window.addEventListener("wheel", releaseSlideGestureOnComments, opts);
     window.addEventListener("touchmove", releaseSlideGestureOnComments, opts);
+    var startOpts = { capture: true, passive: true };
+    document.addEventListener("touchstart", rememberCommentTouch, startOpts);
+    window.addEventListener("touchstart", rememberCommentTouch, startOpts);
   }
 
   function bindFeedSwipe() {
