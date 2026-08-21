@@ -1256,17 +1256,27 @@
     return !!(el && el.closest && el.closest(COMMENT_TREE));
   }
 
-  /* Live 390×844 (0.2.8 CSS): comment-list is already the scrollport
-   * (oy auto, max-height 376, ch 252, sh 1763–2015, scrollTop writable).
-   * Wheel on the list leaves every scrollTop at 0; wheel on the viewport
-   * center still swaps the feed. Official swipe on ancestor #slidelist
-   * eats wheel/touch (likely capture + preventDefault). We register later
-   * than official on the same node, so capture on the parent runs first.
-   * stopImmediatePropagation only — no preventDefault, no scrollTop, no
-   * layout read. Default scroll stays with the official list. */
+  function commentsOpenOnTree(el) {
+    return (
+      document.documentElement.classList.contains("pcwtm-comments") &&
+      commentTreeTarget(el)
+    );
+  }
+
+  /* Step 1 — our swipe: bindFeedSwipe only has touchstart / touchend
+   * (bubble). We never bind wheel, so we are not the party eating the
+   * wheel. When html.pcwtm-comments and the gesture is on the official
+   * comment tree, do not click the official next/prev arrows. */
+
+  /* Step 2 — not us: official swipe on ancestor #slidelist still eats
+   * wheel/touch (likely capture + preventDefault). Live 390: list is
+   * already a scrollport (sh>ch, scrollTop writable) but wheel leaves
+   * scrollTop at 0. We register later than official on the same node,
+   * so capture on the parent runs first. stopImmediatePropagation
+   * only — no preventDefault, no scrollTop. This blocks the ancestor
+   * from seeing the event; it is not a scroll implementation. */
   function releaseSlideGestureOnComments(e) {
-    if (!document.documentElement.classList.contains("pcwtm-comments")) return;
-    if (!commentTreeTarget(e.target)) return;
+    if (!commentsOpenOnTree(e.target)) return;
     e.stopImmediatePropagation();
   }
 
@@ -1288,10 +1298,12 @@
     list.setAttribute("data-pcwtm-swipe", "1");
     var startY = 0;
     var startX = 0;
+    var skipOurSwipe = false;
     list.addEventListener(
       "touchstart",
       function (e) {
         if (!e.touches || !e.touches[0]) return;
+        skipOurSwipe = commentsOpenOnTree(e.target);
         startY = e.touches[0].clientY;
         startX = e.touches[0].clientX;
       },
@@ -1301,10 +1313,12 @@
       "touchend",
       function (e) {
         if (!e.changedTouches || !e.changedTouches[0]) return;
+        var ignore = skipOurSwipe || commentTreeTarget(e.target);
+        skipOurSwipe = false;
+        if (ignore) return;
         var dy = e.changedTouches[0].clientY - startY;
         var dx = e.changedTouches[0].clientX - startX;
         if (Math.abs(dy) < 60 || Math.abs(dy) < Math.abs(dx) * 1.4) return;
-        if (commentTreeTarget(e.target)) return;
         var sel =
           dy < 0
             ? '[data-e2e="video-switch-next-arrow"]'
