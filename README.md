@@ -15,7 +15,7 @@
 | 站点 | 状态 | 下载 |
 | --- | --- | --- |
 | 哔哩哔哩 `www.bilibili.com` | 首页 + 播放页可用 | [下载页](sites/bilibili/) · [bilibili.user.js](sites/bilibili/bilibili.user.js) |
-| 抖音 `www.douyin.com` | 首页上下滑 + 视频详情/评论 · 0.2.8 | [下载页](sites/douyin/) · [douyin.user.js](sites/douyin/douyin.user.js) |
+| 抖音 `www.douyin.com` | 首页上下滑 + 视频详情/评论 · 0.2.9 | [下载页](sites/douyin/) · [douyin.user.js](sites/douyin/douyin.user.js) |
 
 ### 怎么用（iOS Alook）
 
@@ -48,13 +48,15 @@ python3 sites/bilibili/build.py
 
 会重新生成可安装的 `bilibili.user.js`。
 
-### 抖音 0.2.8
+### 抖音 0.2.9
 
 已经能用：
 
 - 推荐页入口是 `/?recommend=1&from_nav=1`（菜单「推荐 / For You」带上 `pcwtm`）。官网可能会改掉 `from_nav`，脚本只保证 `pcwtm` 还在
+- 推荐流顶栏不再 `display:none` 整条 `#douyin-header`：搜索/通知/红条视觉藏，官网「登录」留 44 热区（同一颗节点，不克隆）。汉堡仍是 `#pcwtm-menu-btn`
+- 引导蒙层开着时官网「我知道了」可点；关完登录墙残留层 `pointer-events:none`，不盖赞评轨
 - 未登录登录墙：收掉左侧二维码列，把 `article#douyin_login_comp_flat_panel` 锁在视口宽里，官网关闭 X 留在屏内。没有另做关闭按钮
-- 推荐竖滑：视频铺满屏，顶栏收掉，只留一层薄菜单；点赞/评论/收藏/分享仍是官网自己的控件
+- 推荐竖滑：视频铺满屏，顶栏搜索/红条视觉藏，只留官网登录 44 + 薄菜单；点赞/评论/收藏/分享仍是官网自己的控件
 - 直接打开 `/video/:id` 后浏览器返回（以及官网「返回」）会落到精选电脑版。脚本在离开详情时记下，下一页若是 `/`、`/jingxuan` 或精选网格，就 `replace` 到 `/?recommend=1&from_nav=1`（带 `pcwtm`）。菜单里点「精选」仍去精选
 - `/video/:id` 详情流滑到下一条时，评论开/关跟着当前条，不再钉死第一条的 `#videoSideCard` / `comment-list` / `feed-comment-icon`
 - 推荐流开评（`/?recommend=1`、`/jingxuan?modal_id=` 弹层）：官网列表是滚口；评层打开时把滚轮/拖的位移交给当前可见 `[data-e2e=comment-list].scrollTop`，挡住 `#slidelist` 换片。精选首页不承诺。不承诺头栏评论数全部挂上
