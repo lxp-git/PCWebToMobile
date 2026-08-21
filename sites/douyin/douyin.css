@@ -219,12 +219,14 @@ html.pcwtm.pcwtm-comments #douyin-header {
   pointer-events: none;
 }
 
-html.pcwtm.pcwtm-recommend #douyin-header *:not(.pcwtm-host-login, .pcwtm-host-login *, [data-e2e="login-button"], [data-e2e="login-button"] *),
-html.pcwtm.pcwtm-modal #douyin-header *:not(.pcwtm-host-login, .pcwtm-host-login *, [data-e2e="login-button"], [data-e2e="login-button"] *),
-html.pcwtm.pcwtm-video #douyin-header *:not(.pcwtm-host-login, .pcwtm-host-login *, [data-e2e="login-button"], [data-e2e="login-button"] *),
-html.pcwtm.pcwtm-comments #douyin-header *:not(.pcwtm-host-login, .pcwtm-host-login *, [data-e2e="login-button"], [data-e2e="login-button"] *) {
+/* Do not opacity:0 ancestors of official 登录 — opacity is not overridable
+ * by a child, so a 44 host with fg color still paints nothing. visibility
+ * hidden on siblings only; ancestors that :has(the door) stay unpainted. */
+html.pcwtm.pcwtm-recommend #douyin-header *:not(.pcwtm-host-login):not(.pcwtm-host-login *):not([data-e2e="login-button"]):not([data-e2e="login-button"] *):not(:has(.pcwtm-host-login)):not(:has([data-e2e="login-button"])),
+html.pcwtm.pcwtm-modal #douyin-header *:not(.pcwtm-host-login):not(.pcwtm-host-login *):not([data-e2e="login-button"]):not([data-e2e="login-button"] *):not(:has(.pcwtm-host-login)):not(:has([data-e2e="login-button"])),
+html.pcwtm.pcwtm-video #douyin-header *:not(.pcwtm-host-login):not(.pcwtm-host-login *):not([data-e2e="login-button"]):not([data-e2e="login-button"] *):not(:has(.pcwtm-host-login)):not(:has([data-e2e="login-button"])),
+html.pcwtm.pcwtm-comments #douyin-header *:not(.pcwtm-host-login):not(.pcwtm-host-login *):not([data-e2e="login-button"]):not([data-e2e="login-button"] *):not(:has(.pcwtm-host-login)):not(:has([data-e2e="login-button"])) {
   visibility: hidden !important;
-  opacity: 0 !important;
   pointer-events: none !important;
 }
 
@@ -261,9 +263,9 @@ html.pcwtm #douyin-header [id^="douyin-header-menu"] {
   flex: 0 0 auto !important;
 }
 
-/* Official 登录 / avatar: never display:none. On the header it stays
- * --pcwtm-tap (quiet, no red bar). Drawer-open JS parks the same node
- * into #pcwtm-drawer — those rules are below. */
+/* Official 登录 / avatar: never display:none. Idle recommend: same node
+ * must paint 登录 text or official icon in --pcwtm-fg. overflow:visible
+ * so 44 box does not clip the glyph. No new button. */
 html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
 html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
 html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
@@ -278,12 +280,12 @@ html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login
   bottom: auto !important;
   z-index: var(--pcwtm-z-chrome);
   box-sizing: border-box !important;
-  width: var(--pcwtm-tap) !important;
-  height: var(--pcwtm-tap) !important;
+  width: auto !important;
   min-width: var(--pcwtm-tap);
   min-height: var(--pcwtm-tap);
+  height: var(--pcwtm-tap);
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 0 4px !important;
   display: grid !important;
   place-items: center !important;
   background: transparent !important;
@@ -291,8 +293,10 @@ html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login
   border: 0 !important;
   box-shadow: none !important;
   color: var(--pcwtm-fg) !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
   border-radius: 0 !important;
-  overflow: hidden;
+  overflow: visible !important;
   content-visibility: visible !important;
   transform: none !important;
   touch-action: manipulation;
@@ -310,7 +314,11 @@ html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login
   background-color: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  color: inherit !important;
+  color: var(--pcwtm-fg) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  overflow: visible !important;
+  font-size: inherit !important;
 }
 
 html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
