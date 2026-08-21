@@ -1233,8 +1233,8 @@
   }
 
   /* Official comment tree. Live: #videoSideCard sits inside #slidelist /
-   * #sliderVideo even when position:fixed. Jingxuan overlay may omit
-   * #slidelist. Hashed class names are avoided. */
+   * #sliderVideo even when position:fixed. Hashed class names avoided.
+   * Login-wall / 「登录后查看更多」use stable ids / data-e2e only. */
   var COMMENT_TREE =
     "#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list'], [data-e2e='comment-item'], [data-e2e='video-comment-more'], #related-video-card-login-guide, .related-video-card-login-guide, .comment-input-un-login-container";
 
@@ -1244,9 +1244,22 @@
     return !!(el && el.closest && el.closest(COMMENT_TREE));
   }
 
+  /* Product lock: /?recommend=1 and /jingxuan?modal_id= overlay only.
+   * Do not cover /jingxuan grid or 「精选电脑版」landing. Reuses
+   * isRecommendUrl — no jingxuan-homepage selectors. */
+  function onPromisedRecommendFeed() {
+    try {
+      var u = new URL(location.href);
+      if (isRecommendUrl(u)) return true;
+      if (u.searchParams.get("modal_id")) return true;
+    } catch (e) {}
+    return false;
+  }
+
   function commentsOpenOnTree(el) {
     return (
       document.documentElement.classList.contains("pcwtm-comments") &&
+      onPromisedRecommendFeed() &&
       commentTreeTarget(el)
     );
   }
@@ -1256,13 +1269,10 @@
    * wheel. When html.pcwtm-comments and the gesture is on the official
    * comment tree, do not click the official next/prev arrows. */
 
-  /* Step 2 — 54d6c22 live: slidelist/parent had data-pcwtm-cmtg=1, but
-   * a #slidelist capture probe still saw wheel (defaultPrevented=false,
-   * scrollTop 0→0). SIP on slidelist did not cut the path — official
-   * eats on a further ancestor, or jingxuan「精选电脑版」has no
-   * #slidelist so the shield never attached. Bind document + window
-   * capture once at load. stopImmediatePropagation only — no
-   * preventDefault, no scrollTop. Not a scroll implementation. */
+  /* Step 2 — 54d6c22 live: slidelist/parent SIP did not cut a slidelist
+   * capture probe. Bind document + window capture once at load.
+   * Only SIP when html.pcwtm-comments + promised recommend feed +
+   * comment-tree target. No preventDefault, no scrollTop. */
   function releaseSlideGestureOnComments(e) {
     if (!commentsOpenOnTree(e.target)) return;
     e.stopImmediatePropagation();
