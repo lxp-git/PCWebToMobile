@@ -1785,6 +1785,29 @@
     return wrap.querySelector("path") || wrap.querySelector("svg") || wrap;
   }
 
+  /* Live (390, CDP): pointer click on padded svg AND on the 12×12 path did
+   * not dismiss. svg.click() / path.click() did, and left no leftover hosts.
+   * Do not skip path hoping the pointer hits the handler. Re-entry guard
+   * so our synthetic click does not loop. */
+  var loginCloseClicking = false;
+
+  function clickOfficialLoginCloser() {
+    var closer = findLoginCloser();
+    if (!closer || loginCloseClicking) return;
+    loginCloseClicking = true;
+    try {
+      closer.click();
+    } finally {
+      loginCloseClicking = false;
+    }
+  }
+
+  function tapIsLoginCloser(t) {
+    var title = document.getElementById("douyin_login_comp_flat_panel_title");
+    var wrap = title && title.nextElementSibling;
+    return !!(wrap && t && (wrap === t || (wrap.contains && wrap.contains(t))));
+  }
+
   function findGuideCloser() {
     var mask = guideMaskRoot();
     if (!mask) return null;
@@ -1867,13 +1890,8 @@
         if (!t || !t.closest) return;
 
         if (isLoginWallNode(t) && loginWallOpen()) {
-          var title = document.getElementById("douyin_login_comp_flat_panel_title");
-          var wrap = title && title.nextElementSibling;
-          if (wrap && (wrap === t || wrap.contains(t))) {
-            if ((t.tagName || "").toLowerCase() === "path") return;
-            var closer = findLoginCloser();
-            if (closer && closer !== t) closer.click();
-          }
+          if (loginCloseClicking) return;
+          if (tapIsLoginCloser(t)) clickOfficialLoginCloser();
           return;
         }
 

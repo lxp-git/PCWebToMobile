@@ -914,10 +914,11 @@ html.pcwtm [data-e2e="comment-item"] {
 }
 
 /* Login wall: open iff title or #douyin_login_comp_mobile_code is present.
- * Idle leftovers must pe:none on the host AND descendants so they cannot
- * cover .positionBox. Never display:none a wrapper that may hold the rail.
- * Never * { pointer-events:auto } the whole open tree (that sat leftovers
- * on the rail). Close buttons: never display:none. */
+ * After official closer.click() hosts may unmount; if a leftover stays,
+ * idle (no title / no mobile_code) is pe:none on host AND descendants so
+ * they cannot cover .positionBox. Never display:none a wrapper that may
+ * hold the rail. Never * { pointer-events:auto } the whole open tree.
+ * Close buttons: never display:none. */
 html.pcwtm :is([id^="login-full-panel-"], #login-panel-new, #douyin-login-new-id, article#douyin_login_comp_flat_panel):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
   pointer-events: none !important;
   z-index: 0 !important;
@@ -948,27 +949,24 @@ html.pcwtm #captcha_container {
   pointer-events: none !important;
 }
 
-/* Title DIV is not a control. Official closer is the sibling wrap; live
- * handler is the inner path (~37px glyph). e2p on a padded svg misses it.
- * Keep the official svg/path; do not invent a button. JS .click()s path
- * when the tap lands on wrap/svg. Never display:none the closer. */
+/* Title DIV is not a control. Do not pad the official svg — live pointer/CDP
+ * on padded svg and on the 12×12 path both missed the handler; only
+ * svg/path.click() dismissed. JS calls official closer.click() on wrap/svg/path
+ * taps. Never display:none the closer. */
 html.pcwtm #douyin_login_comp_flat_panel_title {
   pointer-events: none !important;
 }
 html.pcwtm #douyin_login_comp_flat_panel_title ~ * {
   pointer-events: auto !important;
-  min-width: var(--pcwtm-tap);
-  min-height: var(--pcwtm-tap);
   touch-action: manipulation;
 }
 html.pcwtm #douyin_login_comp_flat_panel_title ~ * :is(svg, path) {
   pointer-events: auto !important;
 }
 
-/* Guide-mask: idle host + leftover children pe:none (MASTER 0.2.8 set the
- * whole open mask to none, so 「我知道了」never received hits). Open
- * (html.pcwtm-guide): mask eats clicks; card + official close pe:auto.
- * Never display:none the official closer. */
+/* Guide-mask 未出现 this pass. Keep idle host + leftover children pe:none;
+ * open (html.pcwtm-guide): mask eats clicks; card + official close pe:auto.
+ * Do not invent the mask. Never display:none the official closer. */
 html.pcwtm :is([data-e2e="recommend-guide-mask"], #douyin-web-recommend-guide-mask),
 html.pcwtm :is([data-e2e="recommend-guide-mask"], #douyin-web-recommend-guide-mask) * {
   pointer-events: none !important;
@@ -980,9 +978,8 @@ html.pcwtm.pcwtm-guide :is([data-e2e="recommend-guide-mask"], #douyin-web-recomm
   pointer-events: auto !important;
 }
 
-/* Official share board 未出现 on unlogged recommend (share opens login wall).
- * Other blocking official dialogs 未出现 this run. JS marks a visible
- * official host with .pcwtm-official-dialog — do not invent a share UI. */
+/* Share sheet 未出现 this pass (unlogged share opens the login wall).
+ * Keep restyle for a mounted official host. Do not invent a share UI. */
 html.pcwtm .pcwtm-official-dialog {
   height: var(--pcwtm-sheet) !important;
   max-height: var(--pcwtm-sheet) !important;
@@ -1297,7 +1294,9 @@ html.pcwtm #slidelist[class*="isCssFullScreen"] {
   height: 100dvh !important;
 }
 
-/* ---------- Hide download / get-app chrome, keep login ---------- */
+/* In-page get-app / download bars: CSS-hide. A Chrome xdg-open
+ * “open this application” dialog is browser chrome, not a DOM node —
+ * do not intercept app protocols and do not build a closer for it. */
 
 html.pcwtm a[href*="apps.apple.com"],
 html.pcwtm a[href*="itunes.apple.com"],
