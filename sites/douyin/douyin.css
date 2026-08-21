@@ -638,7 +638,14 @@ html.pcwtm .xgplayer-playswitch {
 
 /* Bottom sheet only while html.pcwtm-comments (official side width > 0).
  * Live 2026-08-20: after official X, #relatedVideoCard / comment-list stay
- * in the DOM at width 0. :has() would keep this block applied. */
+ * in the DOM at width 0. :has() would keep this block applied.
+ *
+ * 0.2.1 (8724ea64) / 0.2.5: layer overflow:visible so the official list
+ * is the scrollport. 0.2.7 hid the layer (overflow:hidden + height =
+ * --pcwtm-sheet) and set the list max-height to the same token — list
+ * scrollHeight===clientHeight, official lazy-load stopped at 置顶 + one
+ * + 「登录后查看更多」. Do not clip the list here. Do not overflow the
+ * whole descendant tree. */
 html.pcwtm.pcwtm-comments #videoSideCard.pcwtm-sheet-panel,
 html.pcwtm.pcwtm-comments #videoSideBar.pcwtm-sheet-panel,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
@@ -655,7 +662,7 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
   border-top: 1px solid var(--pcwtm-border);
   border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */
   z-index: 10055 !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   overscroll-behavior: contain;
   padding: 0 0 env(safe-area-inset-bottom);
   box-sizing: border-box !important;
@@ -758,13 +765,18 @@ html.pcwtm.pcwtm-comments [data-e2e="comment-list"] {
   max-width: 100% !important;
 }
 
+/* Official list is the scrollport. Shorter than the layer so title/X
+ * (--pcwtm-tap, live 44×44 host-close) stay out of the roll. 0.2.1 used
+ * calc(56dvh - 56px); 0.2.5 used calc(var(--pcwtm-sheet) - 44px). Same
+ * height as the host (0.2.7) made scrollHeight===clientHeight. */
 html.pcwtm.pcwtm-comments #videoSideCard #merge-all-comment-container,
 html.pcwtm.pcwtm-comments #videoSideBar #merge-all-comment-container,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel #merge-all-comment-container,
 html.pcwtm.pcwtm-comments #videoSideCard [data-e2e="comment-list"],
 html.pcwtm.pcwtm-comments #videoSideBar [data-e2e="comment-list"],
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-list"] {
-  max-height: var(--pcwtm-sheet);
+  max-height: calc(var(--pcwtm-sheet) - var(--pcwtm-tap));
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
