@@ -1246,9 +1246,10 @@
   }
 
   /* Official comment tree. Live: #videoSideCard sits inside #slidelist /
-   * #sliderVideo even when position:fixed. Do not include hashed names. */
+   * #sliderVideo even when position:fixed. Jingxuan overlay may omit
+   * #slidelist. Hashed class names are avoided. */
   var COMMENT_TREE =
-    "#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list']";
+    "#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list'], [data-e2e='comment-item'], [data-e2e='video-comment-more'], #related-video-card-login-guide, .related-video-card-login-guide, .comment-input-un-login-container";
 
   function commentTreeTarget(el) {
     if (!el) return false;
@@ -1268,32 +1269,31 @@
    * wheel. When html.pcwtm-comments and the gesture is on the official
    * comment tree, do not click the official next/prev arrows. */
 
-  /* Step 2 — not us: official swipe on ancestor #slidelist still eats
-   * wheel/touch (likely capture + preventDefault). Live 390: list is
-   * already a scrollport (sh>ch, scrollTop writable) but wheel leaves
-   * scrollTop at 0. We register later than official on the same node,
-   * so capture on the parent runs first. stopImmediatePropagation
-   * only — no preventDefault, no scrollTop. This blocks the ancestor
-   * from seeing the event; it is not a scroll implementation. */
+  /* Step 2 — 54d6c22 live: slidelist/parent had data-pcwtm-cmtg=1, but
+   * a #slidelist capture probe still saw wheel (defaultPrevented=false,
+   * scrollTop 0→0). SIP on slidelist did not cut the path — official
+   * eats on a further ancestor, or jingxuan「精选电脑版」has no
+   * #slidelist so the shield never attached. Bind document + window
+   * capture once at load. stopImmediatePropagation only — no
+   * preventDefault, no scrollTop. Not a scroll implementation. */
   function releaseSlideGestureOnComments(e) {
     if (!commentsOpenOnTree(e.target)) return;
     e.stopImmediatePropagation();
   }
 
-  function bindSlideCommentShield(el) {
-    if (!el || el.nodeType !== 1) return;
-    if (el.getAttribute("data-pcwtm-cmtg") === "1") return;
-    el.setAttribute("data-pcwtm-cmtg", "1");
+  function bindDocumentCommentShield() {
+    if (document.documentElement.getAttribute("data-pcwtm-cmtg") === "1") return;
+    document.documentElement.setAttribute("data-pcwtm-cmtg", "1");
     var opts = { capture: true, passive: true };
-    el.addEventListener("wheel", releaseSlideGestureOnComments, opts);
-    el.addEventListener("touchmove", releaseSlideGestureOnComments, opts);
+    document.addEventListener("wheel", releaseSlideGestureOnComments, opts);
+    document.addEventListener("touchmove", releaseSlideGestureOnComments, opts);
+    window.addEventListener("wheel", releaseSlideGestureOnComments, opts);
+    window.addEventListener("touchmove", releaseSlideGestureOnComments, opts);
   }
 
   function bindFeedSwipe() {
     var list = document.getElementById("slidelist");
     if (!list) return;
-    bindSlideCommentShield(list.parentNode);
-    bindSlideCommentShield(list);
     if (list.getAttribute("data-pcwtm-swipe") === "1") return;
     list.setAttribute("data-pcwtm-swipe", "1");
     var startY = 0;
@@ -1660,6 +1660,7 @@
     }
   }
 
+  bindDocumentCommentShield();
   bindLeaveHooks();
   rememberVideoPage();
   patchHistory();
