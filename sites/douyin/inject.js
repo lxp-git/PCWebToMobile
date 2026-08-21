@@ -492,12 +492,21 @@
       applyStyle();
       syncPage();
     } else {
-      document.documentElement.classList.remove("pcwtm-open", "pcwtm-searching", "pcwtm-comments");
+      restoreOfficialLogin();
+      document.documentElement.classList.remove(
+        "pcwtm-open",
+        "pcwtm-searching",
+        "pcwtm-comments",
+        "pcwtm-guide"
+      );
     }
     return on;
   }
 
   var HOST_CLOSE_CLASS = "pcwtm-host-close";
+  var HOST_LOGIN_CLASS = "pcwtm-host-login";
+  var OFFICIAL_DIALOG_CLASS = "pcwtm-official-dialog";
+  var loginHome = null;
 
   function visibleArea(el) {
     if (!el || !el.getBoundingClientRect) return 0;
@@ -997,6 +1006,7 @@
   }
 
   function closeDrawer() {
+    restoreOfficialLogin();
     document.documentElement.classList.remove("pcwtm-open");
   }
 
@@ -1006,6 +1016,7 @@
       return;
     }
     renderDrawer();
+    parkOfficialLoginInDrawer();
     document.documentElement.classList.add("pcwtm-open");
   }
 
@@ -1045,6 +1056,7 @@
       text = (text || "").replace(/\s+/g, " ").trim();
       if (!text || text.length > 24) return;
       if (/下载|打开抖音|Get APP|\bApp\b/i.test(text)) return;
+      if (/^(登录|登錄|Log in|Login|Sign in)$/i.test(text)) return;
       try {
         href = new URL(href, location.href).href;
       } catch (e) {
@@ -1117,6 +1129,7 @@
   function renderDrawer() {
     var drawer = document.getElementById("pcwtm-drawer");
     if (!drawer) return;
+    restoreOfficialLogin();
     var links = collectLinks();
     var html = "";
     links.forEach(function (l) {
@@ -1174,6 +1187,10 @@
     if (btn && mask && drawer) {
       bindFeedSwipe();
       bindCommentSheet();
+      bindOverlayCloses();
+      markOfficialLogin();
+      syncGuideMask();
+      markOfficialDialogs();
       syncCommentSheet();
       return;
     }
@@ -1229,6 +1246,10 @@
 
     bindFeedSwipe();
     bindCommentSheet();
+    bindOverlayCloses();
+    markOfficialLogin();
+    syncGuideMask();
+    markOfficialDialogs();
     syncCommentSheet();
   }
 
@@ -1425,6 +1446,9 @@
     if (on) {
       ensureChrome();
       startWatch();
+      markOfficialLogin();
+      syncGuideMask();
+      markOfficialDialogs();
       if (markActiveAweme()) {
         setTimeout(syncCommentSheet, 50);
         setTimeout(syncCommentSheet, 250);
@@ -1479,6 +1503,17 @@
     }
     watchRoot(document.getElementById("douyin-header"), { childList: true });
     watchRoot(document.getElementById("douyin-right-container"), { childList: true });
+    watchRoot(document.body, { childList: true });
+    var overlayObs = {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class", "hidden"],
+    };
+    var overlays = overlayRoots();
+    for (i = 0; i < overlays.length; i++) {
+      watchRoot(overlays[i], overlayObs);
+    }
     var sides = commentSidePanels();
     for (i = 0; i < sides.length; i++) {
       watchRoot(sides[i], {
@@ -1608,6 +1643,269 @@
       schedule();
     });
     bindTraverseIntercept();
+  }
+
+  function loginWallOpen() {
+    return !!(
+      document.getElementById("douyin_login_comp_flat_panel_title") ||
+      document.getElementById("douyin_login_comp_mobile_code") ||
+      document.getElementById("douyin_login_comp_single_panel")
+    );
+  }
+
+  function loginScopes() {
+    return [document.getElementById("douyin-header"), document.getElementById("pcwtm-drawer")];
+  }
+
+  function findOfficialLogin() {
+    var marked = document.querySelector("." + HOST_LOGIN_CLASS);
+    if (marked && marked.isConnected) return marked;
+    var scopes = loginScopes();
+    var s;
+    for (s = 0; s < scopes.length; s++) {
+      var scope = scopes[s];
+      if (!scope) continue;
+      var byE2e = scope.querySelector(
+        '[data-e2e="login-button"], [data-e2e="header-login"], [data-e2e*="login-button"]'
+      );
+      if (byE2e) return byE2e.closest("button, [role='button'], a") || byE2e;
+    }
+    var best = null;
+    var bestLen = 1e6;
+    var bestScope = null;
+    for (s = 0; s < scopes.length; s++) {
+      if (!scopes[s]) continue;
+      var nodes = scopes[s].querySelectorAll("button, [role='button'], a, p, div, span");
+      var i;
+      for (i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        if (el.closest && el.closest("#pcwtm-drawer a, [data-pcwtm-act]")) continue;
+        var t = labelOf(el);
+        if (!/^(登录|登錄|Log in|Login|Sign in)$/i.test(t)) continue;
+        if (t.length < bestLen) {
+          bestLen = t.length;
+          best = el;
+          bestScope = scopes[s];
+        }
+      }
+    }
+    if (!best) {
+      for (s = 0; s < scopes.length; s++) {
+        if (!scopes[s]) continue;
+        best = scopes[s].querySelector('[data-e2e*="avatar"], [data-e2e="user-info"]');
+        if (best) {
+          bestScope = scopes[s];
+          break;
+        }
+      }
+    }
+    if (!best) return null;
+    var host = best.closest("button, [role='button'], a");
+    if (host && bestScope && bestScope.contains(host)) return host;
+    host = best;
+    while (host.parentElement && bestScope && bestScope.contains(host.parentElement) && host.parentElement !== bestScope) {
+      var parent = host.parentElement;
+      if (parent.id === "douyin-header-menuCt" || parent.id === "pcwtm-drawer") break;
+      if (parent.children && parent.children.length > 2) break;
+      host = parent;
+    }
+    return host;
+  }
+
+  function markOfficialLogin() {
+    var login = findOfficialLogin();
+    var prev = document.querySelectorAll("." + HOST_LOGIN_CLASS);
+    var i;
+    for (i = 0; i < prev.length; i++) {
+      if (prev[i] !== login) prev[i].classList.remove(HOST_LOGIN_CLASS);
+    }
+    if (login) login.classList.add(HOST_LOGIN_CLASS);
+    return login;
+  }
+
+  function rememberLoginHome(login) {
+    if (!login || !login.parentNode) return;
+    if (login.parentNode.id === "pcwtm-drawer") return;
+    loginHome = { parent: login.parentNode, next: login.nextSibling };
+  }
+
+  function restoreOfficialLogin() {
+    var login = document.querySelector("." + HOST_LOGIN_CLASS);
+    if (!login || !loginHome || !loginHome.parent || !loginHome.parent.isConnected) return;
+    if (login.parentNode === loginHome.parent) return;
+    if (loginHome.next && loginHome.next.parentNode === loginHome.parent) {
+      loginHome.parent.insertBefore(login, loginHome.next);
+    } else {
+      loginHome.parent.appendChild(login);
+    }
+  }
+
+  function parkOfficialLoginInDrawer() {
+    var login = markOfficialLogin();
+    var drawer = document.getElementById("pcwtm-drawer");
+    if (!login || !drawer) return;
+    rememberLoginHome(login);
+    if (login.parentNode !== drawer) drawer.insertBefore(login, drawer.firstChild);
+  }
+
+  function guideMaskRoot() {
+    return (
+      document.getElementById("douyin-web-recommend-guide-mask") ||
+      document.querySelector("[data-e2e='recommend-guide-mask']")
+    );
+  }
+
+  function guideMaskShowing() {
+    var el = guideMaskRoot();
+    if (!el || !el.isConnected) return false;
+    var st;
+    try {
+      st = window.getComputedStyle(el);
+    } catch (e) {
+      return false;
+    }
+    if (st.display === "none" || st.visibility === "hidden") return false;
+    if (parseFloat(st.opacity) === 0) return false;
+    var r = el.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) return false;
+    var t = (el.textContent || "").replace(/\s+/g, "");
+    if (/我知道了|知道了/.test(t)) return true;
+    return st.display === "flex" || st.display === "block";
+  }
+
+  function syncGuideMask() {
+    document.documentElement.classList.toggle("pcwtm-guide", guideMaskShowing());
+  }
+
+  function findLoginCloser() {
+    var title = document.getElementById("douyin_login_comp_flat_panel_title");
+    if (!title) return null;
+    var wrap = title.nextElementSibling;
+    if (!wrap) return null;
+    return wrap.querySelector("path") || wrap.querySelector("svg") || wrap;
+  }
+
+  /* Live (390, CDP): pointer click on padded svg AND on the 12×12 path did
+   * not dismiss. svg.click() / path.click() did, and left no leftover hosts.
+   * Do not skip path hoping the pointer hits the handler. Re-entry guard
+   * so our synthetic click does not loop. */
+  var loginCloseClicking = false;
+
+  function clickOfficialLoginCloser() {
+    var closer = findLoginCloser();
+    if (!closer || loginCloseClicking) return;
+    loginCloseClicking = true;
+    try {
+      closer.click();
+    } finally {
+      loginCloseClicking = false;
+    }
+  }
+
+  function tapIsLoginCloser(t) {
+    var title = document.getElementById("douyin_login_comp_flat_panel_title");
+    var wrap = title && title.nextElementSibling;
+    return !!(wrap && t && (wrap === t || (wrap.contains && wrap.contains(t))));
+  }
+
+  function findGuideCloser() {
+    var mask = guideMaskRoot();
+    if (!mask) return null;
+    var nodes = mask.querySelectorAll("button, [role='button']");
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var t = (nodes[i].textContent || "").replace(/\s+/g, "");
+      if (/我知道了|知道了|取消/.test(t)) return nodes[i];
+    }
+    var svgs = mask.querySelectorAll("svg");
+    for (i = 0; i < svgs.length; i++) {
+      var r = svgs[i].getBoundingClientRect();
+      if (r.width > 0 && r.width <= 48 && r.height <= 48) {
+        return svgs[i].querySelector("path") || svgs[i].closest("button, [role='button']") || svgs[i];
+      }
+    }
+    return null;
+  }
+
+  function isOfficialShareOrOtherDialog(el) {
+    if (!el || !el.getAttribute) return false;
+    if (el.id === "login-panel-new" || el.id === "douyin-login-new-id") return false;
+    if (el.id === "douyin_login_comp_flat_panel") return false;
+    if (el.id === "videoSideCard" || el.id === "videoSideBar") return false;
+    if (el.id === "douyin-web-recommend-guide-mask") return false;
+    if ((el.getAttribute("data-e2e") || "") === "recommend-guide-mask") return false;
+    if ((el.id || "").indexOf("login-full-panel-") === 0) return false;
+    if (el.querySelector && el.querySelector("#douyin_login_comp_mobile_code, #douyin_login_comp_flat_panel_title, .positionBox"))
+      return false;
+    return true;
+  }
+
+  function markOfficialDialogs() {
+    var nodes = document.querySelectorAll("[role='dialog'], .semi-modal");
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      if (!isOfficialShareOrOtherDialog(el) || visibleArea(el) < 6400) {
+        el.classList.remove(OFFICIAL_DIALOG_CLASS);
+        continue;
+      }
+      el.classList.add(OFFICIAL_DIALOG_CLASS);
+    }
+  }
+
+  function overlayRoots() {
+    var out = [];
+    var ids = ["login-panel-new", "douyin-login-new-id", "douyin_login_comp_flat_panel"];
+    var i;
+    for (i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (el) out.push(el);
+    }
+    var fulls = document.querySelectorAll("[id^='login-full-panel-']");
+    for (i = 0; i < fulls.length && i < 4; i++) out.push(fulls[i]);
+    var guide = guideMaskRoot();
+    if (guide) out.push(guide);
+    return out;
+  }
+
+  function bindOverlayCloses() {
+    if (document.documentElement.getAttribute("data-pcwtm-ovl") === "1") return;
+    document.documentElement.setAttribute("data-pcwtm-ovl", "1");
+    document.addEventListener(
+      "click",
+      function (e) {
+        var door = e.target && e.target.closest ? e.target.closest("." + HOST_LOGIN_CLASS + ", [data-e2e='login-button']") : null;
+        if (door && document.documentElement.classList.contains("pcwtm-open")) {
+          setTimeout(closeDrawer, 0);
+        }
+      },
+      { capture: false, passive: true }
+    );
+    document.addEventListener(
+      "click",
+      function (e) {
+        var t = e.target;
+        if (!t) return;
+        if (t.nodeType === 3) t = t.parentNode;
+        if (!t || !t.closest) return;
+
+        if (isLoginWallNode(t) && loginWallOpen()) {
+          if (loginCloseClicking) return;
+          if (tapIsLoginCloser(t)) clickOfficialLoginCloser();
+          return;
+        }
+
+        if (document.documentElement.classList.contains("pcwtm-guide")) {
+          var mask = guideMaskRoot();
+          if (!mask || !mask.contains(t)) return;
+          var gclose = findGuideCloser();
+          if (!gclose) return;
+          if (gclose === t || (gclose.contains && gclose.contains(t))) return;
+          gclose.click();
+        }
+      },
+      { capture: true, passive: true }
+    );
   }
 
   function isLoginWallNode(el) {

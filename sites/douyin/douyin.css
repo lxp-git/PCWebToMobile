@@ -24,7 +24,8 @@
  *     video-player-digg / feed-comment-icon.
  *   /jingxuan: .jingxuan-scroll-element .discover-video-card-item .discover-tab-bar
  * Hashed class names (e.g. .eRu21rp0) are avoided — they rotate.
- * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal.
+ * JS may add html.pcwtm-recommend / pcwtm-jingxuan / pcwtm-video / pcwtm-modal / pcwtm-guide.
+ * JS marks the official header 登录 / avatar with .pcwtm-host-login (same node, never cloned).
  * JS marks the in-view aweme with .pcwtm-active-aweme after /video/:id slide.
  * After a slide, do not keep first-card selectors — classes move with the item.
  * JS adds html.pcwtm-comments only when a #videoSideCard / #videoSideBar official
@@ -53,6 +54,10 @@ html.pcwtm {
   --pcwtm-bar: 48px;
   --pcwtm-tap: 44px;
   --pcwtm-sheet: min(52dvh, 420px);
+  --pcwtm-z-rail: 40;
+  --pcwtm-z-sheet: 10055;
+  --pcwtm-z-chrome: 10080;
+  --pcwtm-z-dialog: 10120;
   --header-height: var(--pcwtm-bar);
   color-scheme: dark;
 }
@@ -143,7 +148,7 @@ html.pcwtm:not(.pcwtm-video) #douyin-sidebar-new:has([data-e2e*="comment-icon"])
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  z-index: 40;
+  z-index: var(--pcwtm-z-rail);
   pointer-events: auto !important;
   overflow: visible !important;
 }
@@ -172,11 +177,11 @@ html.pcwtm.pcwtm-video #douyin-sidebar-new {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  z-index: 40;
+  z-index: var(--pcwtm-z-rail);
   overflow: visible !important;
 }
 
-/* ---------- Header (search stays; feed hides this for full-bleed) ---------- */
+/* ---------- Header (feed: never display:none — official 登录 stays in DOM) ---------- */
 
 html.pcwtm #douyin-header {
   position: fixed !important;
@@ -197,18 +202,32 @@ html.pcwtm #douyin-header {
   color: var(--pcwtm-fg);
 }
 
+/* Recommend / modal / detail / comments: no elevated bar, no search, no red CTA.
+ * Host pe:none so the 48px strip does not eat vertical swipe.
+ * Official 登录 / avatar: never display:none, never cloned. Header keeps
+ * --pcwtm-tap; drawer-open parks that same node into #pcwtm-drawer. */
 html.pcwtm.pcwtm-recommend #douyin-header,
 html.pcwtm.pcwtm-modal #douyin-header,
 html.pcwtm.pcwtm-video #douyin-header,
 html.pcwtm.pcwtm-comments #douyin-header {
-  display: none !important;
-  content-visibility: hidden;
-}
-
-html.pcwtm.pcwtm-recommend.pcwtm-searching:not(.pcwtm-comments) #douyin-header,
-html.pcwtm.pcwtm-modal.pcwtm-searching:not(.pcwtm-comments) #douyin-header {
   display: flex !important;
   content-visibility: visible;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  pointer-events: none;
+}
+
+/* Do not opacity:0 ancestors of official 登录 — opacity is not overridable
+ * by a child, so a 44 host with fg color still paints nothing. visibility
+ * hidden on siblings only; ancestors that :has(the door) stay unpainted. */
+html.pcwtm.pcwtm-recommend #douyin-header *:not(.pcwtm-host-login):not(.pcwtm-host-login *):not([data-e2e="login-button"]):not([data-e2e="login-button"] *):not(:has(.pcwtm-host-login)):not(:has([data-e2e="login-button"])),
+html.pcwtm.pcwtm-modal #douyin-header *:not(.pcwtm-host-login):not(.pcwtm-host-login *):not([data-e2e="login-button"]):not([data-e2e="login-button"] *):not(:has(.pcwtm-host-login)):not(:has([data-e2e="login-button"])),
+html.pcwtm.pcwtm-video #douyin-header *:not(.pcwtm-host-login):not(.pcwtm-host-login *):not([data-e2e="login-button"]):not([data-e2e="login-button"] *):not(:has(.pcwtm-host-login)):not(:has([data-e2e="login-button"])),
+html.pcwtm.pcwtm-comments #douyin-header *:not(.pcwtm-host-login):not(.pcwtm-host-login *):not([data-e2e="login-button"]):not([data-e2e="login-button"] *):not(:has(.pcwtm-host-login)):not(:has([data-e2e="login-button"])) {
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 html.pcwtm #douyin-header > div,
@@ -232,15 +251,82 @@ html.pcwtm #douyin-header-menuCt {
   overflow: visible !important;
 }
 
-html.pcwtm #douyin-header [data-e2e="notice-entry"],
-html.pcwtm #douyin-header [data-e2e="im-entry"],
-html.pcwtm #douyin-header [data-e2e="something-button"] {
-  display: none !important;
-  content-visibility: hidden;
+/* Search / notice / IM / leftover CTA: visual hide only. Never display:none
+ * an ancestor that may still hold official 登录. */
+html.pcwtm #douyin-header :is([data-e2e="notice-entry"], [data-e2e="im-entry"], [data-e2e="something-button"]:not(.pcwtm-host-login):not([data-e2e="login-button"])) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 html.pcwtm #douyin-header [id^="douyin-header-menu"] {
   flex: 0 0 auto !important;
+}
+
+/* Official 登录 / avatar: never display:none. Idle recommend: same node
+ * must paint 登录 text or official icon in --pcwtm-fg. overflow:visible
+ * so 44 box does not clip the glyph. No new button. */
+html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
+html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
+html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
+html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  top: calc(var(--pcwtm-space) + env(safe-area-inset-top)) !important;
+  left: calc(var(--pcwtm-space) + env(safe-area-inset-left)) !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: var(--pcwtm-z-chrome);
+  box-sizing: border-box !important;
+  width: auto !important;
+  min-width: var(--pcwtm-tap);
+  min-height: var(--pcwtm-tap);
+  height: var(--pcwtm-tap);
+  margin: 0 !important;
+  padding: 0 4px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--pcwtm-fg) !important;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  content-visibility: visible !important;
+  transform: none !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) * {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--pcwtm-fg) !important;
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  overflow: visible !important;
+  font-size: inherit !important;
+}
+
+html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible {
+  outline: 2px solid var(--pcwtm-fg);
+  outline-offset: 2px;
 }
 
 /* ---------- Overlay chrome ---------- */
@@ -267,7 +353,7 @@ html.pcwtm #pcwtm-menu-btn.pcwtm-float {
   position: fixed;
   top: calc(var(--pcwtm-space) + env(safe-area-inset-top));
   right: calc(var(--pcwtm-space) + env(safe-area-inset-right));
-  z-index: 10080;
+  z-index: var(--pcwtm-z-chrome);
 }
 
 html.pcwtm #pcwtm-menu-btn:active {
@@ -277,7 +363,7 @@ html.pcwtm #pcwtm-menu-btn:active {
 html.pcwtm #pcwtm-mask {
   position: fixed;
   inset: 0;
-  z-index: 10060;
+  z-index: var(--pcwtm-z-chrome);
   background: rgba(0, 0, 0, 0.46);
   opacity: 0;
   pointer-events: none;
@@ -297,7 +383,7 @@ html.pcwtm #pcwtm-drawer {
   right: 0;
   bottom: 0;
   width: min(80vw, 320px);
-  z-index: 10070;
+  z-index: var(--pcwtm-z-chrome);
   box-sizing: border-box;
   background: var(--pcwtm-elevated);
   color: var(--pcwtm-fg);
@@ -315,7 +401,50 @@ html.pcwtm #pcwtm-drawer {
 }
 
 html.pcwtm.pcwtm-open #pcwtm-drawer {
-  transform: translateX(0);
+  transform: translateX(0) !important;
+  right: 0 !important;
+  left: auto !important;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Same official 登录 / avatar node, parked in the drawer (not a clone).
+ * Quiet row — do not restore the PC red login bar. */
+html.pcwtm #pcwtm-drawer :is(.pcwtm-host-login, [data-e2e="login-button"]) {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: var(--pcwtm-tap);
+  min-height: var(--pcwtm-tap);
+  height: auto !important;
+  margin: 0 0 var(--pcwtm-space) !important;
+  padding: 12px 16px !important;
+  border: 0 !important;
+  border-radius: var(--pcwtm-radius);
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--pcwtm-fg) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.pcwtm #pcwtm-drawer :is(.pcwtm-host-login, [data-e2e="login-button"]) * {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: inherit !important;
 }
 
 html.pcwtm #pcwtm-drawer a,
@@ -485,7 +614,7 @@ html.pcwtm [class*="hide-interaction-area"].positionBox {
   min-width: var(--pcwtm-tap);
   min-height: var(--pcwtm-tap);
   transform: none !important;
-  z-index: 40;
+  z-index: var(--pcwtm-z-rail);
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
@@ -661,7 +790,7 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel {
   background: var(--pcwtm-elevated) !important;
   border-top: 1px solid var(--pcwtm-border);
   border-radius: 16px 16px 0 0; /* inner 8 + pad 8 */
-  z-index: 10055 !important;
+  z-index: var(--pcwtm-z-sheet) !important;
   overflow: visible !important;
   overscroll-behavior: contain;
   padding: 0 0 env(safe-area-inset-bottom);
@@ -692,11 +821,12 @@ html.pcwtm.pcwtm-comments .xgplayer-playswitch {
   visibility: hidden !important;
 }
 
-/* Hamburger is not the comment close — park it top-left while the sheet is open */
+/* Hamburger is not the comment close — park it top-left while the sheet is open.
+ * Header 登录 is --pcwtm-tap at top-left; keep hit boxes apart. */
 html.pcwtm.pcwtm-comments #pcwtm-menu-btn.pcwtm-float {
   right: auto;
-  left: calc(8px + env(safe-area-inset-left));
-  top: calc(8px + env(safe-area-inset-top));
+  left: calc(var(--pcwtm-space) + env(safe-area-inset-left) + var(--pcwtm-tap) + var(--pcwtm-space));
+  top: calc(var(--pcwtm-space) + env(safe-area-inset-top));
   visibility: visible;
   pointer-events: auto;
 }
@@ -791,23 +921,30 @@ html.pcwtm [data-e2e="comment-item"] {
   max-width: 100% !important;
 }
 
-/* Leftover login overlays after official close. Do NOT apply while the
- * wall is open: live 390, the official X is a 37×36 svg sibling of
- * #douyin_login_comp_flat_panel_title (title "Log in to Douyin"). The old
- * #login-panel-new *:not(#flat):not(#mobile) { pointer-events:none } beat
- * article * { auto } because :not(#id) adds ID specificity — X computed
- * pe:none; elementFromPoint at the X hit #captcha_container; click did
- * not dismiss. Never hide a wrapper that also holds the rail. */
-html.pcwtm [id^="login-full-panel-"]:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
+/* Login wall: open iff title or #douyin_login_comp_mobile_code is present.
+ * After official closer.click() hosts may unmount; if a leftover stays,
+ * idle (no title / no mobile_code) is pe:none on host AND descendants so
+ * they cannot cover .positionBox. Never display:none a wrapper that may
+ * hold the rail. Never * { pointer-events:auto } the whole open tree.
+ * Close buttons: never display:none. */
+html.pcwtm :is([id^="login-full-panel-"], #login-panel-new, #douyin-login-new-id, article#douyin_login_comp_flat_panel):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) {
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+html.pcwtm :is([id^="login-full-panel-"], #login-panel-new, #douyin-login-new-id, article#douyin_login_comp_flat_panel):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])):not(:has([data-e2e="video-player-digg"])) * {
   pointer-events: none !important;
 }
-html.pcwtm #login-panel-new:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])),
-html.pcwtm #douyin-login-new-id:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])),
-html.pcwtm article#douyin_login_comp_flat_panel:not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)) {
-  pointer-events: none !important;
+html.pcwtm :is(#login-panel-new, #douyin-login-new-id, article#douyin_login_comp_flat_panel):not(:has(#douyin_login_comp_mobile_code)):not(:has(#douyin_login_comp_single_panel)):not(:has(#douyin_login_comp_flat_panel_title)):not(:has(.positionBox)):not(:has(.xgplayer)):not(:has(.xgplayer-playswitch)):not(:has([data-e2e="video-switch-next-arrow"])):not(:has([data-e2e="feed-comment-icon"])) {
   visibility: hidden !important;
   width: auto !important;
   max-width: none !important;
+}
+
+html.pcwtm :is([id^="login-full-panel-"], #login-panel-new, #douyin-login-new-id, article#douyin_login_comp_flat_panel):has(#douyin_login_comp_flat_panel_title),
+html.pcwtm :is([id^="login-full-panel-"], #login-panel-new, #douyin-login-new-id, article#douyin_login_comp_flat_panel):has(#douyin_login_comp_mobile_code),
+html.pcwtm :is([id^="login-full-panel-"], #login-panel-new, #douyin-login-new-id, article#douyin_login_comp_flat_panel):has(#douyin_login_comp_single_panel) {
+  z-index: var(--pcwtm-z-dialog) !important;
+  pointer-events: auto !important;
 }
 
 /* Live e2p at the「Douyin」title-end pixel AND at the official 37×36
@@ -820,50 +957,50 @@ html.pcwtm #captcha_container {
   pointer-events: none !important;
 }
 
-/* Official title-row closer — restore hits we previously swallowed. */
-html.pcwtm #douyin_login_comp_flat_panel_title ~ *,
-html.pcwtm #douyin_login_comp_flat_panel_title ~ * *,
-html.pcwtm article#douyin_login_comp_flat_panel,
-html.pcwtm article#douyin_login_comp_flat_panel *,
-html.pcwtm #login-panel-new #douyin_login_comp_flat_panel,
-html.pcwtm #login-panel-new #douyin_login_comp_flat_panel *,
-html.pcwtm #login-panel-new #douyin_login_comp_single_panel,
-html.pcwtm #login-panel-new #douyin_login_comp_single_panel *,
-html.pcwtm #login-panel-new #douyin_login_comp_mobile_code,
-html.pcwtm #login-panel-new #douyin_login_comp_mobile_code *,
-html.pcwtm #douyin-login-new-id #douyin_login_comp_flat_panel,
-html.pcwtm #douyin-login-new-id #douyin_login_comp_flat_panel *,
-html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel,
-html.pcwtm #douyin-login-new-id #douyin_login_comp_single_panel *,
-html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code,
-html.pcwtm #douyin-login-new-id #douyin_login_comp_mobile_code * {
+/* Title DIV is not a control. Do not pad the official svg — live pointer/CDP
+ * on padded svg and on the 12×12 path both missed the handler; only
+ * svg/path.click() dismissed. JS calls official closer.click() on wrap/svg/path
+ * taps. Never display:none the closer. */
+html.pcwtm #douyin_login_comp_flat_panel_title {
+  pointer-events: none !important;
+}
+html.pcwtm #douyin_login_comp_flat_panel_title ~ * {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+html.pcwtm #douyin_login_comp_flat_panel_title ~ * :is(svg, path) {
   pointer-events: auto !important;
 }
 
-/* Live 390: title #douyin_login_comp_flat_panel_title is x=105..285,
- * official closer is the only sibling (DIV > 37×36 svg at x=331..368).
- * QA taps the faint X at the title end. e2p there is the title DIV
- * (no button, no <a>, not a logo link). Svg-center e2p is path.
- * Expanding the sibling DIV's padding made title-end hit the wrapper;
- * a click on that padding did not dismiss — the handler is on the svg.
- * Extend the official svg's own box left. Title is not a control.
- * Must beat article * / #login-panel-new #flat * pe:auto above. */
-html.pcwtm #login-panel-new article#douyin_login_comp_flat_panel #douyin_login_comp_flat_panel_title,
-html.pcwtm #douyin-login-new-id article#douyin_login_comp_flat_panel #douyin_login_comp_flat_panel_title {
+/* Guide-mask 未出现 this pass. Keep idle host + leftover children pe:none;
+ * open (html.pcwtm-guide): mask eats clicks; card + official close pe:auto.
+ * Do not invent the mask. Never display:none the official closer. */
+html.pcwtm :is([data-e2e="recommend-guide-mask"], #douyin-web-recommend-guide-mask),
+html.pcwtm :is([data-e2e="recommend-guide-mask"], #douyin-web-recommend-guide-mask) * {
   pointer-events: none !important;
 }
-html.pcwtm #login-panel-new article#douyin_login_comp_flat_panel #douyin_login_comp_flat_panel_title ~ * svg,
-html.pcwtm #douyin-login-new-id article#douyin_login_comp_flat_panel #douyin_login_comp_flat_panel_title ~ * svg {
-  box-sizing: content-box !important;
-  padding-left: 56px !important;
-  margin-left: -56px !important;
-  overflow: visible !important;
+html.pcwtm.pcwtm-guide :is([data-e2e="recommend-guide-mask"], #douyin-web-recommend-guide-mask) {
+  pointer-events: auto !important;
+}
+html.pcwtm.pcwtm-guide :is([data-e2e="recommend-guide-mask"], #douyin-web-recommend-guide-mask) :is(button, [role="button"], [role="dialog"], .semi-modal) {
   pointer-events: auto !important;
 }
 
-html.pcwtm [data-e2e="recommend-guide-mask"],
-html.pcwtm #douyin-web-recommend-guide-mask {
-  pointer-events: none !important;
+/* Share sheet 未出现 this pass (unlogged share opens the login wall).
+ * Keep restyle for a mounted official host. Do not invent a share UI. */
+html.pcwtm .pcwtm-official-dialog {
+  height: var(--pcwtm-sheet) !important;
+  max-height: var(--pcwtm-sheet) !important;
+  background: var(--pcwtm-elevated) !important;
+  border-radius: 16px 16px 0 0;
+  z-index: var(--pcwtm-z-dialog) !important;
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  top: auto !important;
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
 }
 
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-item"],
@@ -1023,7 +1160,7 @@ html.pcwtm.pcwtm-video #basePlayerContainer ~ *:has([data-e2e*="comment-icon"]) 
   max-width: none !important;
   height: auto !important;
   max-height: 80dvh !important;
-  z-index: 40 !important;
+  z-index: var(--pcwtm-z-rail) !important;
   overflow: visible !important;
   pointer-events: auto !important;
   background: transparent !important;
@@ -1165,7 +1302,9 @@ html.pcwtm #slidelist[class*="isCssFullScreen"] {
   height: 100dvh !important;
 }
 
-/* ---------- Hide download / get-app chrome, keep login ---------- */
+/* In-page get-app / download bars: CSS-hide. A Chrome xdg-open
+ * “open this application” dialog is browser chrome, not a DOM node —
+ * do not intercept app protocols and do not build a closer for it. */
 
 html.pcwtm a[href*="apps.apple.com"],
 html.pcwtm a[href*="itunes.apple.com"],
