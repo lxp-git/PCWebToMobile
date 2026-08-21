@@ -767,8 +767,10 @@ html.pcwtm.pcwtm-comments [data-e2e="comment-list"] {
 
 /* Official list is the scrollport. Shorter than the layer so title/X
  * (--pcwtm-tap, live 44×44 host-close) stay out of the roll. 0.2.1 used
- * calc(56dvh - 56px); 0.2.5 used calc(var(--pcwtm-sheet) - 44px). Same
- * height as the host (0.2.7) made scrollHeight===clientHeight. */
+ * calc(56dvh - 56px); 0.2.5 used calc(var(--pcwtm-sheet) - 44px).
+ * Live 0.2.8: this geometry already yields sh>ch; do not retune
+ * overflow/max-height. touch-action:pan-y only — #slidelist stays
+ * pointer-events auto. */
 html.pcwtm.pcwtm-comments #videoSideCard #merge-all-comment-container,
 html.pcwtm.pcwtm-comments #videoSideBar #merge-all-comment-container,
 html.pcwtm.pcwtm-comments .pcwtm-sheet-panel #merge-all-comment-container,
@@ -781,6 +783,7 @@ html.pcwtm.pcwtm-comments .pcwtm-sheet-panel [data-e2e="comment-list"] {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   pointer-events: auto !important;
 }
 

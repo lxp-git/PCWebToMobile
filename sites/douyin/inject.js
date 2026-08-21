@@ -1232,9 +1232,46 @@
     syncCommentSheet();
   }
 
+  /* Official comment tree. Live: #videoSideCard sits inside #slidelist /
+   * #sliderVideo even when position:fixed. Do not include hashed names. */
+  var COMMENT_TREE =
+    "#videoSideCard, #videoSideBar, .pcwtm-sheet-panel, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list']";
+
+  function commentTreeTarget(el) {
+    if (!el) return false;
+    if (el.nodeType === 3) el = el.parentNode;
+    return !!(el && el.closest && el.closest(COMMENT_TREE));
+  }
+
+  /* Live 390×844 (0.2.8 CSS): comment-list is already the scrollport
+   * (oy auto, max-height 376, ch 252, sh 1763–2015, scrollTop writable).
+   * Wheel on the list leaves every scrollTop at 0; wheel on the viewport
+   * center still swaps the feed. Official swipe on ancestor #slidelist
+   * eats wheel/touch (likely capture + preventDefault). We register later
+   * than official on the same node, so capture on the parent runs first.
+   * stopImmediatePropagation only — no preventDefault, no scrollTop, no
+   * layout read. Default scroll stays with the official list. */
+  function releaseSlideGestureOnComments(e) {
+    if (!document.documentElement.classList.contains("pcwtm-comments")) return;
+    if (!commentTreeTarget(e.target)) return;
+    e.stopImmediatePropagation();
+  }
+
+  function bindSlideCommentShield(el) {
+    if (!el || el.nodeType !== 1) return;
+    if (el.getAttribute("data-pcwtm-cmtg") === "1") return;
+    el.setAttribute("data-pcwtm-cmtg", "1");
+    var opts = { capture: true, passive: true };
+    el.addEventListener("wheel", releaseSlideGestureOnComments, opts);
+    el.addEventListener("touchmove", releaseSlideGestureOnComments, opts);
+  }
+
   function bindFeedSwipe() {
     var list = document.getElementById("slidelist");
-    if (!list || list.getAttribute("data-pcwtm-swipe") === "1") return;
+    if (!list) return;
+    bindSlideCommentShield(list.parentNode);
+    bindSlideCommentShield(list);
+    if (list.getAttribute("data-pcwtm-swipe") === "1") return;
     list.setAttribute("data-pcwtm-swipe", "1");
     var startY = 0;
     var startX = 0;
@@ -1254,14 +1291,7 @@
         var dy = e.changedTouches[0].clientY - startY;
         var dx = e.changedTouches[0].clientX - startX;
         if (Math.abs(dy) < 60 || Math.abs(dy) < Math.abs(dx) * 1.4) return;
-        if (
-          e.target &&
-          e.target.closest &&
-          e.target.closest(
-            "#videoSideCard, #videoSideBar, #relatedVideoCard, #merge-all-comment-container, [data-e2e='comment-list']"
-          )
-        )
-          return;
+        if (commentTreeTarget(e.target)) return;
         var sel =
           dy < 0
             ? '[data-e2e="video-switch-next-arrow"]'
