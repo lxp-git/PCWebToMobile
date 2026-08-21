@@ -53,7 +53,7 @@ python3 sites/bilibili/build.py
 已经能用：
 
 - 推荐页入口是 `/?recommend=1&from_nav=1`（菜单「推荐 / For You」带上 `pcwtm`）。官网可能会改掉 `from_nav`，脚本只保证 `pcwtm` 还在
-- 推荐流顶栏不再 `display:none` 整条 `#douyin-header`：搜索/通知/红条视觉藏。主动登录的门是抽屉里同一颗官网「登录」/头像（不克隆、不把 PC 红登录铺回推荐流）。汉堡仍是 `#pcwtm-menu-btn`
+- 推荐流顶栏不再 `display:none` 整条 `#douyin-header`：搜索/通知/红条视觉藏。官网「登录」留 `--pcwtm-tap`，抽屉开着把同一颗挂进抽屉（不克隆、不铺大红登录条）。汉堡仍是 `#pcwtm-menu-btn`
 - 引导蒙层开着时官网「我知道了」可点；关完登录墙残留层 `pointer-events:none`，不盖赞评轨
 - 未登录登录墙：收掉左侧二维码列，把 `article#douyin_login_comp_flat_panel` 锁在视口宽里，官网关闭 X 留在屏内。没有另做关闭按钮
 - 推荐竖滑：视频铺满屏，顶栏搜索/红条视觉藏，只留薄菜单；点赞/评论/收藏/分享仍是官网自己的控件

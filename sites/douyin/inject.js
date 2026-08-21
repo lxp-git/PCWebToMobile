@@ -492,6 +492,7 @@
       applyStyle();
       syncPage();
     } else {
+      restoreOfficialLogin();
       document.documentElement.classList.remove(
         "pcwtm-open",
         "pcwtm-searching",
@@ -505,6 +506,7 @@
   var HOST_CLOSE_CLASS = "pcwtm-host-close";
   var HOST_LOGIN_CLASS = "pcwtm-host-login";
   var OFFICIAL_DIALOG_CLASS = "pcwtm-official-dialog";
+  var loginHome = null;
 
   function visibleArea(el) {
     if (!el || !el.getBoundingClientRect) return 0;
@@ -1004,6 +1006,7 @@
   }
 
   function closeDrawer() {
+    restoreOfficialLogin();
     document.documentElement.classList.remove("pcwtm-open");
   }
 
@@ -1013,7 +1016,7 @@
       return;
     }
     renderDrawer();
-    markOfficialLogin();
+    parkOfficialLoginInDrawer();
     document.documentElement.classList.add("pcwtm-open");
   }
 
@@ -1126,6 +1129,7 @@
   function renderDrawer() {
     var drawer = document.getElementById("pcwtm-drawer");
     if (!drawer) return;
+    restoreOfficialLogin();
     var links = collectLinks();
     var html = "";
     links.forEach(function (l) {
@@ -1649,38 +1653,59 @@
     );
   }
 
+  function loginScopes() {
+    return [document.getElementById("douyin-header"), document.getElementById("pcwtm-drawer")];
+  }
+
   function findOfficialLogin() {
-    var header = document.getElementById("douyin-header");
-    if (!header) return null;
-    var marked = header.querySelector("." + HOST_LOGIN_CLASS);
+    var marked = document.querySelector("." + HOST_LOGIN_CLASS);
     if (marked && marked.isConnected) return marked;
-    var byE2e = header.querySelector(
-      '[data-e2e="login-button"], [data-e2e="header-login"], [data-e2e*="login-button"]'
-    );
-    if (byE2e) return byE2e.closest("button, [role='button'], a") || byE2e;
-    var nodes = header.querySelectorAll("button, [role='button'], a, p, div, span");
-    var i;
+    var scopes = loginScopes();
+    var s;
+    for (s = 0; s < scopes.length; s++) {
+      var scope = scopes[s];
+      if (!scope) continue;
+      var byE2e = scope.querySelector(
+        '[data-e2e="login-button"], [data-e2e="header-login"], [data-e2e*="login-button"]'
+      );
+      if (byE2e) return byE2e.closest("button, [role='button'], a") || byE2e;
+    }
     var best = null;
     var bestLen = 1e6;
-    for (i = 0; i < nodes.length; i++) {
-      var el = nodes[i];
-      var t = labelOf(el);
-      if (!/^(登录|登錄|Log in|Login|Sign in)$/i.test(t)) continue;
-      if (t.length < bestLen) {
-        bestLen = t.length;
-        best = el;
+    var bestScope = null;
+    for (s = 0; s < scopes.length; s++) {
+      if (!scopes[s]) continue;
+      var nodes = scopes[s].querySelectorAll("button, [role='button'], a, p, div, span");
+      var i;
+      for (i = 0; i < nodes.length; i++) {
+        var el = nodes[i];
+        if (el.closest && el.closest("#pcwtm-drawer a, [data-pcwtm-act]")) continue;
+        var t = labelOf(el);
+        if (!/^(登录|登錄|Log in|Login|Sign in)$/i.test(t)) continue;
+        if (t.length < bestLen) {
+          bestLen = t.length;
+          best = el;
+          bestScope = scopes[s];
+        }
       }
     }
     if (!best) {
-      best = header.querySelector('[data-e2e*="avatar"], [data-e2e="user-info"]');
+      for (s = 0; s < scopes.length; s++) {
+        if (!scopes[s]) continue;
+        best = scopes[s].querySelector('[data-e2e*="avatar"], [data-e2e="user-info"]');
+        if (best) {
+          bestScope = scopes[s];
+          break;
+        }
+      }
     }
     if (!best) return null;
     var host = best.closest("button, [role='button'], a");
-    if (host && header.contains(host)) return host;
+    if (host && bestScope && bestScope.contains(host)) return host;
     host = best;
-    while (host.parentElement && header.contains(host.parentElement) && host.parentElement !== header) {
+    while (host.parentElement && bestScope && bestScope.contains(host.parentElement) && host.parentElement !== bestScope) {
       var parent = host.parentElement;
-      if (parent.id === "douyin-header-menuCt") break;
+      if (parent.id === "douyin-header-menuCt" || parent.id === "pcwtm-drawer") break;
       if (parent.children && parent.children.length > 2) break;
       host = parent;
     }
@@ -1696,6 +1721,31 @@
     }
     if (login) login.classList.add(HOST_LOGIN_CLASS);
     return login;
+  }
+
+  function rememberLoginHome(login) {
+    if (!login || !login.parentNode) return;
+    if (login.parentNode.id === "pcwtm-drawer") return;
+    loginHome = { parent: login.parentNode, next: login.nextSibling };
+  }
+
+  function restoreOfficialLogin() {
+    var login = document.querySelector("." + HOST_LOGIN_CLASS);
+    if (!login || !loginHome || !loginHome.parent || !loginHome.parent.isConnected) return;
+    if (login.parentNode === loginHome.parent) return;
+    if (loginHome.next && loginHome.next.parentNode === loginHome.parent) {
+      loginHome.parent.insertBefore(login, loginHome.next);
+    } else {
+      loginHome.parent.appendChild(login);
+    }
+  }
+
+  function parkOfficialLoginInDrawer() {
+    var login = markOfficialLogin();
+    var drawer = document.getElementById("pcwtm-drawer");
+    if (!login || !drawer) return;
+    rememberLoginHome(login);
+    if (login.parentNode !== drawer) drawer.insertBefore(login, drawer.firstChild);
   }
 
   function guideMaskRoot() {

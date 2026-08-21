@@ -204,8 +204,8 @@ html.pcwtm #douyin-header {
 
 /* Recommend / modal / detail / comments: no elevated bar, no search, no red CTA.
  * Host pe:none so the 48px strip does not eat vertical swipe.
- * Official 登录 / avatar stays in the header DOM (never display:none, never cloned).
- * Door is the drawer — do not paint the PC red login onto the feed. */
+ * Official 登录 / avatar: never display:none, never cloned. Header keeps
+ * --pcwtm-tap; drawer-open parks that same node into #pcwtm-drawer. */
 html.pcwtm.pcwtm-recommend #douyin-header,
 html.pcwtm.pcwtm-modal #douyin-header,
 html.pcwtm.pcwtm-video #douyin-header,
@@ -261,55 +261,31 @@ html.pcwtm #douyin-header [id^="douyin-header-menu"] {
   flex: 0 0 auto !important;
 }
 
-/* Drawer closed: same official node stays in the DOM, visually gone from the
- * feed (no red pill). Never display:none — .click() / drawer-open still work. */
+/* Official 登录 / avatar: never display:none. On the header it stays
+ * --pcwtm-tap (quiet, no red bar). Drawer-open JS parks the same node
+ * into #pcwtm-drawer — those rules are below. */
 html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
 html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
 html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
 html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) {
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-
-/* Drawer open: same node sits in the drawer panel. Header stacking rises
- * above chrome so the official control is hittable; header host stays pe:none.
- * Quiet row — not the PC red login. */
-html.pcwtm.pcwtm-recommend.pcwtm-open #douyin-header,
-html.pcwtm.pcwtm-modal.pcwtm-open #douyin-header,
-html.pcwtm.pcwtm-video.pcwtm-open #douyin-header,
-html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header {
-  z-index: calc(var(--pcwtm-z-chrome) + 1) !important;
-}
-
-html.pcwtm.pcwtm-recommend.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
-html.pcwtm.pcwtm-modal.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
-html.pcwtm.pcwtm-video.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
-html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) {
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
   position: fixed !important;
-  top: calc(16px + env(safe-area-inset-top)) !important;
-  right: 0 !important;
-  left: auto !important;
+  top: calc(var(--pcwtm-space) + env(safe-area-inset-top)) !important;
+  left: calc(var(--pcwtm-space) + env(safe-area-inset-left)) !important;
+  right: auto !important;
   bottom: auto !important;
-  z-index: calc(var(--pcwtm-z-chrome) + 1);
+  z-index: var(--pcwtm-z-chrome);
   box-sizing: border-box !important;
-  width: min(80vw, 320px) !important;
-  max-width: min(80vw, 320px) !important;
+  width: var(--pcwtm-tap) !important;
+  height: var(--pcwtm-tap) !important;
   min-width: var(--pcwtm-tap);
   min-height: var(--pcwtm-tap);
-  height: auto !important;
   margin: 0 !important;
-  padding: 12px calc(var(--pcwtm-tap) + var(--pcwtm-space)) 12px 16px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
   background: transparent !important;
   background-color: transparent !important;
   border: 0 !important;
@@ -323,10 +299,10 @@ html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data
   -webkit-tap-highlight-color: transparent;
 }
 
-html.pcwtm.pcwtm-recommend.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
-html.pcwtm.pcwtm-modal.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
-html.pcwtm.pcwtm-video.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
-html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) * {
+html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) * {
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
@@ -337,10 +313,10 @@ html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data
   color: inherit !important;
 }
 
-html.pcwtm.pcwtm-recommend.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
-html.pcwtm.pcwtm-modal.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
-html.pcwtm.pcwtm-video.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
-html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible {
+html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible {
   outline: 2px solid var(--pcwtm-fg);
   outline-offset: 2px;
 }
@@ -422,7 +398,45 @@ html.pcwtm.pcwtm-open #pcwtm-drawer {
   left: auto !important;
   visibility: visible;
   pointer-events: auto;
-  padding-top: calc(16px + env(safe-area-inset-top) + var(--pcwtm-tap) + var(--pcwtm-space));
+}
+
+/* Same official 登录 / avatar node, parked in the drawer (not a clone).
+ * Quiet row — do not restore the PC red login bar. */
+html.pcwtm #pcwtm-drawer :is(.pcwtm-host-login, [data-e2e="login-button"]) {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: var(--pcwtm-tap);
+  min-height: var(--pcwtm-tap);
+  height: auto !important;
+  margin: 0 0 var(--pcwtm-space) !important;
+  padding: 12px 16px !important;
+  border: 0 !important;
+  border-radius: var(--pcwtm-radius);
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--pcwtm-fg) !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.pcwtm #pcwtm-drawer :is(.pcwtm-host-login, [data-e2e="login-button"]) * {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: inherit !important;
 }
 
 html.pcwtm #pcwtm-drawer a,
@@ -800,10 +814,10 @@ html.pcwtm.pcwtm-comments .xgplayer-playswitch {
 }
 
 /* Hamburger is not the comment close — park it top-left while the sheet is open.
- * Official 登录 lives in the drawer, not on the feed, so no extra offset. */
+ * Header 登录 is --pcwtm-tap at top-left; keep hit boxes apart. */
 html.pcwtm.pcwtm-comments #pcwtm-menu-btn.pcwtm-float {
   right: auto;
-  left: calc(var(--pcwtm-space) + env(safe-area-inset-left));
+  left: calc(var(--pcwtm-space) + env(safe-area-inset-left) + var(--pcwtm-tap) + var(--pcwtm-space));
   top: calc(var(--pcwtm-space) + env(safe-area-inset-top));
   visibility: visible;
   pointer-events: auto;
