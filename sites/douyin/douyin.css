@@ -204,7 +204,8 @@ html.pcwtm #douyin-header {
 
 /* Recommend / modal / detail / comments: no elevated bar, no search, no red CTA.
  * Host pe:none so the 48px strip does not eat vertical swipe.
- * Official 登录 is the same header node (.pcwtm-host-login), never cloned. */
+ * Official 登录 / avatar stays in the header DOM (never display:none, never cloned).
+ * Door is the drawer — do not paint the PC red login onto the feed. */
 html.pcwtm.pcwtm-recommend #douyin-header,
 html.pcwtm.pcwtm-modal #douyin-header,
 html.pcwtm.pcwtm-video #douyin-header,
@@ -260,30 +261,55 @@ html.pcwtm #douyin-header [id^="douyin-header-menu"] {
   flex: 0 0 auto !important;
 }
 
-/* Same official 登录 / avatar node. 44 tap, quiet top-left (hamburger is top-right).
- * Drawer closed or open: this node stays hittable. Transparent, no red pill. */
+/* Drawer closed: same official node stays in the DOM, visually gone from the
+ * feed (no red pill). Never display:none — .click() / drawer-open still work. */
 html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
 html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
 html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
 html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Drawer open: same node sits in the drawer panel. Header stacking rises
+ * above chrome so the official control is hittable; header host stays pe:none.
+ * Quiet row — not the PC red login. */
+html.pcwtm.pcwtm-recommend.pcwtm-open #douyin-header,
+html.pcwtm.pcwtm-modal.pcwtm-open #douyin-header,
+html.pcwtm.pcwtm-video.pcwtm-open #douyin-header,
+html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header {
+  z-index: calc(var(--pcwtm-z-chrome) + 1) !important;
+}
+
+html.pcwtm.pcwtm-recommend.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
+html.pcwtm.pcwtm-modal.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
+html.pcwtm.pcwtm-video.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]),
+html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) {
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
   position: fixed !important;
-  top: calc(var(--pcwtm-space) + env(safe-area-inset-top)) !important;
-  left: calc(var(--pcwtm-space) + env(safe-area-inset-left)) !important;
-  right: auto !important;
+  top: calc(16px + env(safe-area-inset-top)) !important;
+  right: 0 !important;
+  left: auto !important;
   bottom: auto !important;
-  z-index: var(--pcwtm-z-chrome);
+  z-index: calc(var(--pcwtm-z-chrome) + 1);
   box-sizing: border-box !important;
-  width: auto !important;
+  width: min(80vw, 320px) !important;
+  max-width: min(80vw, 320px) !important;
   min-width: var(--pcwtm-tap);
   min-height: var(--pcwtm-tap);
-  height: var(--pcwtm-tap);
+  height: auto !important;
   margin: 0 !important;
-  padding: 0 !important;
-  display: grid !important;
-  place-items: center !important;
+  padding: 12px calc(var(--pcwtm-tap) + var(--pcwtm-space)) 12px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
   background: transparent !important;
   background-color: transparent !important;
   border: 0 !important;
@@ -297,10 +323,10 @@ html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login
   -webkit-tap-highlight-color: transparent;
 }
 
-html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
-html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
-html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
-html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) * {
+html.pcwtm.pcwtm-recommend.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-modal.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-video.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) *,
+html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]) * {
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
@@ -311,10 +337,10 @@ html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login
   color: inherit !important;
 }
 
-html.pcwtm.pcwtm-recommend #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
-html.pcwtm.pcwtm-modal #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
-html.pcwtm.pcwtm-video #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
-html.pcwtm.pcwtm-comments #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible {
+html.pcwtm.pcwtm-recommend.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-modal.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-video.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible,
+html.pcwtm.pcwtm-comments.pcwtm-open #douyin-header :is(.pcwtm-host-login, [data-e2e="login-button"]):focus-visible {
   outline: 2px solid var(--pcwtm-fg);
   outline-offset: 2px;
 }
@@ -392,6 +418,11 @@ html.pcwtm #pcwtm-drawer {
 
 html.pcwtm.pcwtm-open #pcwtm-drawer {
   transform: translateX(0) !important;
+  right: 0 !important;
+  left: auto !important;
+  visibility: visible;
+  pointer-events: auto;
+  padding-top: calc(16px + env(safe-area-inset-top) + var(--pcwtm-tap) + var(--pcwtm-space));
 }
 
 html.pcwtm #pcwtm-drawer a,
@@ -769,10 +800,10 @@ html.pcwtm.pcwtm-comments .xgplayer-playswitch {
 }
 
 /* Hamburger is not the comment close — park it top-left while the sheet is open.
- * Official 登录 already sits at top-left (--pcwtm-tap); keep hit boxes apart. */
+ * Official 登录 lives in the drawer, not on the feed, so no extra offset. */
 html.pcwtm.pcwtm-comments #pcwtm-menu-btn.pcwtm-float {
   right: auto;
-  left: calc(var(--pcwtm-space) + env(safe-area-inset-left) + var(--pcwtm-tap) + var(--pcwtm-space));
+  left: calc(var(--pcwtm-space) + env(safe-area-inset-left));
   top: calc(var(--pcwtm-space) + env(safe-area-inset-top));
   visibility: visible;
   pointer-events: auto;

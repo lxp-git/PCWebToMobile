@@ -1013,6 +1013,7 @@
       return;
     }
     renderDrawer();
+    markOfficialLogin();
     document.documentElement.classList.add("pcwtm-open");
   }
 
@@ -1797,6 +1798,16 @@
   function bindOverlayCloses() {
     if (document.documentElement.getAttribute("data-pcwtm-ovl") === "1") return;
     document.documentElement.setAttribute("data-pcwtm-ovl", "1");
+    document.addEventListener(
+      "click",
+      function (e) {
+        var door = e.target && e.target.closest ? e.target.closest("." + HOST_LOGIN_CLASS + ", [data-e2e='login-button']") : null;
+        if (door && document.documentElement.classList.contains("pcwtm-open")) {
+          setTimeout(closeDrawer, 0);
+        }
+      },
+      { capture: false, passive: true }
+    );
     document.addEventListener(
       "click",
       function (e) {
